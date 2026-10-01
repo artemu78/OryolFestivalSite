@@ -70,7 +70,7 @@ function VkLogin() {
               let { user_id, expires_in, refresh_token, access_token } =
                 await VKID.Auth.exchangeCode(payload.code, payload.device_id);
               if (!active) return;
-              const userInfo = await VKID.User.publicInfo(access_token);
+              const userInfo = await VKID.Auth.userInfo(access_token);
               console.log("VK ID user info:", userInfo);
               setSignedIn(true);
               setOpen(false);
