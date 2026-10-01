@@ -244,6 +244,15 @@ function App() {
             <div className="sessions">
               {visibleSessions.map((item) => (
                 <article className="session" key={item.title}>
+                  {item.background && (
+                    <div className="session-bg" aria-hidden="true">
+                      <img
+                        src={`${import.meta.env.BASE_URL}${item.background}`}
+                        alt=""
+                        loading="lazy"
+                      />
+                    </div>
+                  )}
                   <div className="session-time">
                     <strong>{item.time}</strong>
                   </div>
