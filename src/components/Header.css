@@ -2,6 +2,9 @@
   position: relative;
 }
 .header-login-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   border: 1px solid #bfc7b7;
   border-radius: 30px;
   padding: 12px 17px;
@@ -14,6 +17,18 @@
   color: var(--green);
   font: inherit;
   cursor: pointer;
+}
+.header-login-button:has(.header-login-avatar) {
+  padding: 5px 17px 5px 5px;
+  border-radius: 999px;
+}
+.header-login-avatar {
+  display: block;
+  width: 50px;
+  height: 50px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  object-fit: cover;
 }
 .header-login-button:focus-visible {
   outline: 2px solid var(--green);

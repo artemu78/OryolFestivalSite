@@ -2,6 +2,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
 import { Header, Main, Footer } from "./components";
+import { AuthProvider } from "./context/AuthContext";
 
 const community = "https://vk.ru/club241058655";
 // Fill after agreeing the studio contact with the owner. No invented contact URL.
@@ -22,6 +23,8 @@ function App() {
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <App />
+    <AuthProvider>
+      <App />
+    </AuthProvider>
   </React.StrictMode>,
 );

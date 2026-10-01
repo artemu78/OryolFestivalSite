@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import "./Header.css";
 import { Flower } from "./Flower";
+import { useAuth } from "../context/AuthContext";
 
 const defaultCommunity = "https://vk.ru/club241058655";
 
@@ -31,6 +32,14 @@ function loadVkId() {
 }
 
 function VkLogin() {
+  const {
+    userInfo,
+    setUserId,
+    setExpiresIn,
+    setRefreshToken,
+    setAccessToken,
+    setUserInfo,
+  } = useAuth();
   const container = useRef(null);
   const [open, setOpen] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
@@ -42,7 +51,8 @@ function VkLogin() {
     let oneTap;
     setStatus("Загрузка VK ID…");
     const onError = (param1, param2) => {
-      if (active) console.error("VK ID error:", param1, param2);
+      if (!active) return;
+      console.error("VK ID error:", param1, param2);
       setStatus("Не удалось войти через VK. Закройте окно и попробуйте снова.");
     };
 
@@ -67,11 +77,16 @@ function VkLogin() {
             if (!active) return;
             setStatus("Выполняется вход…");
             try {
-              let { user_id, expires_in, refresh_token, access_token } =
+              const { user_id, expires_in, refresh_token, access_token } =
                 await VKID.Auth.exchangeCode(payload.code, payload.device_id);
               if (!active) return;
               const userInfo = await VKID.Auth.userInfo(access_token);
-              console.log("VK ID user info:", userInfo);
+              if (!active) return;
+              setUserId(user_id);
+              setExpiresIn(expires_in);
+              setRefreshToken(refresh_token);
+              setAccessToken(access_token);
+              setUserInfo(userInfo);
               setSignedIn(true);
               setOpen(false);
               setStatus("");
@@ -86,7 +101,7 @@ function VkLogin() {
       active = false;
       oneTap?.close();
     };
-  }, [open, signedIn]);
+  }, [open, signedIn, setUserId, setExpiresIn, setRefreshToken, setAccessToken, setUserInfo]);
 
   return (
     <div className="header-login">
@@ -97,6 +112,11 @@ function VkLogin() {
         aria-controls={signedIn ? undefined : "vk-login-panel"}
         onClick={() => {
           if (signedIn) {
+            setUserId(null);
+            setExpiresIn(null);
+            setRefreshToken(null);
+            setAccessToken(null);
+            setUserInfo(null);
             setSignedIn(false);
             setStatus("");
           } else {
@@ -105,6 +125,15 @@ function VkLogin() {
           }
         }}
       >
+        {signedIn && userInfo?.avatar && (
+          <img
+            className="header-login-avatar"
+            src={userInfo.avatar}
+            alt=""
+            width="50"
+            height="50"
+          />
+        )}
         {signedIn ? "Выйти" : open ? "Закрыть вход" : "Войти через VK"}
       </button>
       {open && (

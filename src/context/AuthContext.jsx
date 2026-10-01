@@ -1,0 +1,38 @@
+import { createContext, useContext, useMemo, useState } from "react";
+
+export const AuthContext = createContext(null);
+
+// Session values stay in memory and are initially unknown.
+export function AuthProvider({ children }) {
+  const [user_id, setUserId] = useState(null);
+  const [expires_in, setExpiresIn] = useState(null);
+  const [refresh_token, setRefreshToken] = useState(null);
+  const [access_token, setAccessToken] = useState(null);
+  const [userInfo, setUserInfo] = useState(null);
+
+  const value = useMemo(
+    () => ({
+      user_id,
+      expires_in,
+      refresh_token,
+      access_token,
+      userInfo,
+      setUserId,
+      setExpiresIn,
+      setRefreshToken,
+      setAccessToken,
+      setUserInfo,
+    }),
+    [user_id, expires_in, refresh_token, access_token, userInfo],
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === null) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+}
