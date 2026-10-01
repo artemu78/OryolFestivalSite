@@ -34,12 +34,16 @@ function loadVkId() {
 function VkLogin() {
   const {
     userInfo,
+    userId,
     setUserId,
     setExpiresIn,
     setRefreshToken,
     setAccessToken,
     setUserInfo,
   } = useAuth();
+  console.log("VkLogin userInfo:", userInfo);
+  console.log("VkLogin userId:", userId);
+
   const container = useRef(null);
   const [open, setOpen] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
@@ -101,7 +105,15 @@ function VkLogin() {
       active = false;
       oneTap?.close();
     };
-  }, [open, signedIn, setUserId, setExpiresIn, setRefreshToken, setAccessToken, setUserInfo]);
+  }, [
+    open,
+    signedIn,
+    setUserId,
+    setExpiresIn,
+    setRefreshToken,
+    setAccessToken,
+    setUserInfo,
+  ]);
 
   return (
     <div className="header-login">
