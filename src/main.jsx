@@ -229,7 +229,7 @@ function App() {
               role="group"
               aria-label="Разделы программы"
             >
-              {["Всё", "Встреча", "Разговоры", "Практики"].map((item) => (
+              {["Всё", ...new Set(sessions.map(session => session.category))].map((item) => (
                 <button
                   key={item}
                   aria-pressed={filter === item}
