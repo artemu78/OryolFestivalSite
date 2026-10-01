@@ -41,8 +41,8 @@ function VkLogin() {
     setAccessToken,
     setUserInfo,
   } = useAuth();
-  console.log("VkLogin userInfo:", userInfo);
-  console.log("VkLogin userId:", userId);
+  // console.log("VkLogin userInfo:", userInfo);
+  // console.log("VkLogin userId:", userId);
 
   const container = useRef(null);
   const [open, setOpen] = useState(false);
@@ -137,10 +137,10 @@ function VkLogin() {
           }
         }}
       >
-        {signedIn && userInfo?.avatar && (
+        {signedIn && userInfo?.user?.avatar && (
           <img
             className="header-login-avatar"
-            src={userInfo.avatar}
+            src={userInfo.user.avatar}
             alt=""
             width="50"
             height="50"
