@@ -96,9 +96,9 @@ At ≤700px the menu button appears and navigation is hidden until `.nav.open`. 
 
 The active hero is full-width, one-column, and at least one viewport tall (`100vh` fallback, then `100svh`). Desktop padding is `145px max(48px, calc((100% - 1144px) / 2)) 80px`; horizontal padding becomes 30px at ≤1000px and 22px at ≤700px. Mobile top padding is 125px. Copy has a maximum width of 560px.
 
-Poster and video fill the hero with `object-fit: cover`, centered on desktop and positioned at `65% center` on mobile. The cream overlay fades horizontally from opacity .84 at the left to .55 at 38% and zero at 70%. Mobile uses .92 at the left, .74 at 58%, and .35 at the right.
+Poster and video fill the hero with `object-fit: cover`, centered both on desktop and mobile (`50% center`). Mobile screens (≤700px) use a dedicated vertical 9:16 video (`gemini_generated_video_mobile.mp4`) and poster (`1001-mobile.png`) reframed for portrait screens so the eucalyptus leaves cleanly frame the right edge and leave the text readable. The cream overlay fades horizontally from opacity .84 at the left to .55 at 38% and zero at 70%. Mobile uses .92 at the left, .74 at 58%, and .35 at the right.
 
-Keep `public/girls/1001.png` visible until the muted, looping background video actually starts. Fade video opacity over .45s; restore the poster on playback error. The playback pill sits at the bottom right, with 9px 14px padding, 24px radius, `#bec6b1` border and `#f7f5edda` background.
+Keep the poster visible until the muted, looping background video actually starts. Fade video opacity over .45s; restore the poster on playback error. The playback pill sits at the bottom right, with 9px 14px padding, 24px radius, `#bec6b1` border and `#f7f5edda` background.
 
 ### Buttons, links and pills
 
