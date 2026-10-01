@@ -34,11 +34,13 @@ function VkLogin() {
   const container = useRef(null);
   const [open, setOpen] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
+  const [status, setStatus] = useState("");
 
   useEffect(() => {
     if (!open || signedIn) return;
     let active = true;
     let oneTap;
+    setStatus("Загрузка VK ID…");
     const onError = () => {
       if (active)
         setStatus(
@@ -74,6 +76,7 @@ function VkLogin() {
               console.log("VK ID user info:", userInfo);
               setSignedIn(true);
               setOpen(false);
+              setStatus("");
             } catch {
               onError();
             }
