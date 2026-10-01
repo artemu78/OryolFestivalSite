@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles.css';
 import { sessions, venue } from './program';
@@ -11,17 +11,38 @@ function Flower({ className = '' }) {
   return <svg className={className} viewBox="0 0 120 120" aria-hidden="true"><g fill="currentColor">{Array.from({ length: 8 }, (_, i) => <ellipse key={i} cx="60" cy="31" rx="13" ry="27" transform={`rotate(${i * 45} 60 60)`} />)}<circle cx="60" cy="60" r="21" /></g><circle cx="60" cy="60" r="10" fill="#f7f5ed" /></svg>;
 }
 
-function HeroArt() {
-  return <div className="hero-art" aria-hidden="true">
-    <div className="art-orbit"/><div className="art-arch"/>
-    <svg className="plant" viewBox="0 0 430 520"><defs><linearGradient id="leaf" x1="0" y1="1" x2="1" y2="0"><stop stopColor="#244c3c"/><stop offset="1" stopColor="#72966a"/></linearGradient></defs>
-      <path d="M211 508 C180 330 277 250 245 75" fill="none" stroke="#244c3c" strokeWidth="5"/>
-      <g fill="url(#leaf)"><path d="M230 343C113 349 71 263 81 210c102 1 152 62 149 133Z"/><path d="M222 399c116 19 181-56 184-114-111-17-169 38-184 114Z"/><path d="M247 244C129 235 130 145 139 108c86 23 115 70 108 136Z"/><path d="M252 283c110-9 136-83 129-134-91 13-131 61-129 134Z"/><path d="M246 154C173 127 178 60 196 28c61 25 67 68 50 126Z"/><path d="M247 193c80-16 100-85 81-121-66 21-88 60-81 121Z"/></g>
-      <g fill="none" stroke="#bed1a4" strokeWidth="1.5" opacity=".5"><path d="m89 219 137 119M397 295 225 395M145 116l100 122M375 159 255 280M199 37l47 113M324 79l-76 109"/></g>
-    </svg>
-    <Flower className="hero-flower"/><div className="art-sticker">можно<br/><i>быть собой</i><span>✳</span></div>
-    <span className="art-caption">МЕСТО ДЛЯ ТЕБЯ. ВРЕМЯ ДЛЯ СЕБЯ.</span>
-  </div>;
+function HeroMedia() {
+  const videoRef = useRef(null);
+  const [started, setStarted] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const poster = `${import.meta.env.BASE_URL}girls/1001.png`;
+
+  function togglePlayback() {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused) {
+      video.play().catch(() => setStarted(false));
+    } else {
+      video.pause();
+    }
+  }
+
+  return <>
+    <div className="hero-media" aria-hidden="true">
+      <img className="hero-poster" src={poster} alt="" fetchPriority="high" />
+      <video
+        ref={videoRef}
+        className={`hero-video${started ? ' is-playing' : ''}`}
+        src={`${import.meta.env.BASE_URL}girls/gemini_generated_video_4ba23423.mp4`}
+        poster={poster}
+        autoPlay muted loop playsInline preload="auto"
+        onPlaying={() => { setStarted(true); setPlaying(true); }}
+        onPause={() => setPlaying(false)}
+        onError={() => { setStarted(false); setPlaying(false); }}
+      />
+    </div>
+    {started && <button className="hero-playback" onClick={togglePlayback} aria-label={playing ? 'Приостановить фоновое видео' : 'Продолжить фоновое видео'}>{playing ? 'Ⅱ Пауза' : '▷ Продолжить'}</button>}
+  </>;
 }
 
 function App() {
@@ -36,9 +57,10 @@ function App() {
       <nav id="navigation" className={menuOpen ? 'nav open' : 'nav'} aria-label="Основная навигация">{[['О фестивале', '#about'], ['Программа', '#program'], ['Эксперты', '#experts']].map(([label, link]) => <a key={link} href={link} onClick={() => setMenuOpen(false)}>{label}</a>)}<a className="nav-social" href={community} target="_blank" rel="noreferrer">Мы ВКонтакте ↗</a></nav>
     </header>
     <main id="main">
-      <section className="hero wrap">
+      <section className="hero hero-with-media wrap">
+        <HeroMedia/>
         <div className="hero-copy"><div className="eyebrow"><span className="dot"/> 10 ОКТЯБРЯ 2026 · 11:30–18:30 · ОРЁЛ</div><h1>Ближе<br/>к <em>себе.</em></h1><p className="hero-subtitle">Первый фестиваль<br/>ментального здоровья в Орле</p><p className="hero-description">Один день, чтобы замедлиться, услышать себя<br className="desktop-break"/> и поговорить о том, что действительно важно.</p><a className="button" href="#program">Что нас ждёт <span>↗</span></a><div className="hero-note"><span className="small-star">✳</span> В атмосфере уважения и принятия</div></div>
-        <HeroArt/>
+
       </section>
       <div className="event-strip"><div className="wrap strip-inner"><span>10 октября <small>11:30–18:30 · Всемирный день психического здоровья</small></span><span><a href={venue.website} target="_blank" rel="noreferrer">Freedom ↗</a><small>{venue.address}</small></span><span>35 участников <small>Камерно. По-человечески.</small></span><span className="strip-flower">✳</span></div></div>
       <section id="about" className="about section wrap"><div className="section-label">01 / О ФЕСТИВАЛЕ</div><div className="about-content"><h2>Не обязательно делать вид,<br/>что <em>«всё нормально».</em></h2><div className="about-columns"><p>Мы создаём пространство, где можно говорить о психическом здоровье простым и понятным языком. Делиться переживаниями, задавать вопросы и лучше понимать себя.</p><p>Вместе с практикующими психологами и приглашёнными экспертами поговорим о поддержке, заботе о себе и ежедневных привычках. Без страха и необходимости соответствовать.</p></div><div className="values"><span>↗ Понятные разговоры</span><span>✳ Бережные практики</span><span>♡ Живое общение</span></div></div></section>
