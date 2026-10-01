@@ -34,46 +34,52 @@ function VkLogin() {
   const container = useRef(null);
   const [open, setOpen] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
-  const [status, setStatus] = useState("");
 
   useEffect(() => {
     if (!open || signedIn) return;
     let active = true;
     let oneTap;
-    setStatus("Загрузка VK ID…");
     const onError = () => {
-      if (active) setStatus("Не удалось войти через VK. Закройте окно и попробуйте снова.");
+      if (active)
+        setStatus(
+          "Не удалось войти через VK. Закройте окно и попробуйте снова.",
+        );
     };
 
-    loadVkId().then((VKID) => {
-      if (!active) return;
-      VKID.Config.init({
-        app: 54800266,
-        redirectUrl: "https://artemu78.github.io/OryolFestivalSite/",
-        responseMode: VKID.ConfigResponseMode.Callback,
-        source: VKID.ConfigSource.LOWCODE,
-        scope: "",
-      });
-      oneTap = new VKID.OneTap();
-      oneTap.render({ container: container.current, showAlternativeLogin: true })
-        .on(VKID.WidgetEvents.LOAD, () => {
-          if (active) setStatus("");
-        })
-        .on(VKID.WidgetEvents.ERROR, onError)
-        .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, async (payload) => {
-          if (!active) return;
-          setStatus("Выполняется вход…");
-          try {
-            await VKID.Auth.exchangeCode(payload.code, payload.device_id);
-            if (!active) return;
-            setSignedIn(true);
-            setOpen(false);
-            setStatus("Вы вошли через VK");
-          } catch {
-            onError();
-          }
+    loadVkId()
+      .then((VKID) => {
+        if (!active) return;
+        VKID.Config.init({
+          app: 54800266,
+          redirectUrl: "https://artemu78.github.io/OryolFestivalSite/",
+          responseMode: VKID.ConfigResponseMode.Callback,
+          source: VKID.ConfigSource.LOWCODE,
+          scope: "",
         });
-    }).catch(onError);
+        oneTap = new VKID.OneTap();
+        oneTap
+          .render({ container: container.current, showAlternativeLogin: true })
+          .on(VKID.WidgetEvents.LOAD, () => {
+            if (active) setStatus("");
+          })
+          .on(VKID.WidgetEvents.ERROR, onError)
+          .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, async (payload) => {
+            if (!active) return;
+            setStatus("Выполняется вход…");
+            try {
+              let { user_id, expires_in, refresh_token, access_token } =
+                await VKID.Auth.exchangeCode(payload.code, payload.device_id);
+              if (!active) return;
+              const userInfo = await VKID.User.publicInfo(access_token);
+              console.log("VK ID user info:", userInfo);
+              setSignedIn(true);
+              setOpen(false);
+            } catch {
+              onError();
+            }
+          });
+      })
+      .catch(onError);
 
     return () => {
       active = false;
