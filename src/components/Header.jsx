@@ -41,11 +41,9 @@ function VkLogin() {
     let active = true;
     let oneTap;
     setStatus("Загрузка VK ID…");
-    const onError = () => {
-      if (active)
-        setStatus(
-          "Не удалось войти через VK. Закройте окно и попробуйте снова.",
-        );
+    const onError = (param1, param2) => {
+      if (active) console.error("VK ID error:", param1, param2);
+      setStatus("Не удалось войти через VK. Закройте окно и попробуйте снова.");
     };
 
     loadVkId()
