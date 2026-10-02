@@ -74,6 +74,7 @@ a:focus-visible {
   color: var(--muted);
 }
 .nav {
+  --nav-control-height: calc(1.5em + 26px);
   display: flex;
   align-items: center;
   gap: 30px;
@@ -84,6 +85,9 @@ a:focus-visible {
   color: #7b8757;
 }
 .nav-social {
+  box-sizing: border-box;
+  height: var(--nav-control-height);
+  line-height: 1.5;
   border: 1px solid #bfc7b7;
   padding: 12px 17px;
   border-radius: 30px;

@@ -34,6 +34,8 @@ function loadVkId() {
 function VkLogin() {
   const {
     userInfo,
+    signedIn,
+    setSignedIn,
     userId,
     setUserId,
     setExpiresIn,
@@ -46,8 +48,32 @@ function VkLogin() {
 
   const container = useRef(null);
   const [open, setOpen] = useState(false);
-  const [signedIn, setSignedIn] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const loginRoot = useRef(null);
+  const menuButton = useRef(null);
+  const logoutButton = useRef(null);
   const [status, setStatus] = useState("");
+  const avatar = userInfo?.user?.avatar ?? userInfo?.avatar;
+
+  useEffect(() => {
+    if (!userMenuOpen || !signedIn) return;
+    logoutButton.current?.focus();
+    const onPointerDown = (event) => {
+      if (!loginRoot.current?.contains(event.target)) setUserMenuOpen(false);
+    };
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setUserMenuOpen(false);
+        menuButton.current?.focus();
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [userMenuOpen, signedIn]);
 
   useEffect(() => {
     if (!open || signedIn) return;
@@ -113,41 +139,59 @@ function VkLogin() {
     setRefreshToken,
     setAccessToken,
     setUserInfo,
+    setSignedIn,
   ]);
 
   return (
-    <div className="header-login">
+    <div className="header-login" ref={loginRoot}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setUserMenuOpen(false);
+      }}
+    >
       <button
+        ref={menuButton}
         type="button"
-        className="header-login-button"
-        aria-expanded={signedIn ? undefined : open}
-        aria-controls={signedIn ? undefined : "vk-login-panel"}
+        className={`header-login-button${signedIn ? " header-login-button--signed-in" : ""}`}
+        aria-label={signedIn ? "Меню пользователя" : undefined}
+        aria-expanded={signedIn ? userMenuOpen : open}
+        aria-controls={signedIn ? "user-menu-panel" : "vk-login-panel"}
         onClick={() => {
           if (signedIn) {
-            setUserId(null);
-            setExpiresIn(null);
-            setRefreshToken(null);
-            setAccessToken(null);
-            setUserInfo(null);
-            setSignedIn(false);
-            setStatus("");
+            setUserMenuOpen(!userMenuOpen);
           } else {
             setOpen(!open);
             setStatus("");
           }
         }}
       >
-        {signedIn && userInfo?.user?.avatar && (
+        {signedIn && avatar && (
           <img
             className="header-login-avatar"
-            src={userInfo.user.avatar}
+            src={avatar}
             alt=""
             width="50"
             height="50"
           />
         )}
-        {signedIn ? "Выйти" : open ? "Закрыть вход" : "Войти через VK"}
+        {signedIn && !avatar && <span aria-hidden="true">●</span>}
+        {!signedIn && (open ? "Закрыть вход" : "Войти через VK")}
       </button>
+      {signedIn && userMenuOpen && (
+        <div id="user-menu-panel" className="header-user-menu">
+          <button type="button" ref={logoutButton} onClick={() => {
+            setUserId(null);
+            setExpiresIn(null);
+            setRefreshToken(null);
+            setAccessToken(null);
+            setUserInfo(null);
+            setSignedIn(false);
+            setUserMenuOpen(false);
+            setOpen(false);
+            setStatus("");
+            menuButton.current?.focus();
+          }}>Выйти</button>
+        </div>
+      )}
       {open && (
         <div id="vk-login-panel" className="header-login-panel">
           <div ref={container} />
