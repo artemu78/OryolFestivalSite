@@ -1,0 +1,14 @@
+.participant-welcome {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 6;
+  margin: 0;
+  padding: 18px 24px;
+  background: var(--cream);
+  color: var(--green);
+  text-align: center;
+  line-height: 1.5;
+  border-top: 1px solid #bfc7b7;
+}

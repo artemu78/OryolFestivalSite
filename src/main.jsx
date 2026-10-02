@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import "./styles.css";
 import { Header, Main, Footer } from "./components";
 import { AuthProvider } from "./context/AuthContext";
+import { ParticipantWelcome } from "./components/ParticipantWelcome";
 
 const community = content.links.community;
 // Fill after agreeing the studio contact with the owner. No invented contact URL.
@@ -16,6 +17,7 @@ function App() {
         {content.main.skip}
       </a>
       <Header community={community} />
+      <ParticipantWelcome />
       <Main community={community} />
       <Footer community={community} studioContact={studioContact} />
     </>
