@@ -1,3 +1,4 @@
+import content from "../site.json";
 import React, { useState, useRef, useEffect } from "react";
 
 export function HeroMedia() {
@@ -65,10 +66,10 @@ export function HeroMedia() {
           className="hero-playback"
           onClick={togglePlayback}
           aria-label={
-            playing ? "Приостановить фоновое видео" : "Продолжить фоновое видео"
+            playing ? content.HeroMedia.pauseLabel : content.HeroMedia.playLabel
           }
         >
-          {playing ? "Ⅱ Пауза" : "▷ Продолжить"}
+          {playing ? content.HeroMedia.pause : content.HeroMedia.play}
         </button>
       )}
     </>

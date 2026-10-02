@@ -1,21 +1,22 @@
+import content from "../site.json";
 import React from "react";
 
-const defaultCommunity = "https://vk.ru/club241058655";
+const defaultCommunity = content.links.community;
 
 export function Footer({ community = defaultCommunity, studioContact = "" }) {
   return (
     <footer className="footer wrap">
       <div>
-        <span>Первый фестиваль ментального здоровья в Орле</span>
-        <small>10 октября 2026 · Благотворительная инициатива</small>
+        <span>{content.Footer.name}</span>
+        <small>{content.Footer.date}</small>
       </div>
       <a href={community} target="_blank" rel="noreferrer">
-        ВКонтакте ↗
+        {content.Footer.social}
       </a>
       {studioContact ? (
-        <a href={studioContact}>Сайт — Студия Артёма Рева ↗</a>
+        <a href={studioContact}>{content.Footer.studioLink}</a>
       ) : (
-        <span className="studio-credit">Сайт — Студия Артёма Рева</span>
+        <span className="studio-credit">{content.Footer.studio}</span>
       )}
     </footer>
   );

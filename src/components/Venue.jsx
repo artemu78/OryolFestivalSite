@@ -1,20 +1,21 @@
+import content from "../site.json";
 import React from "react";
 import { venue } from "../program";
 
 export function Venue() {
   return (
     <section id="location" className="venue section wrap">
-      <div className="section-label">05 / МЕСТО ВСТРЕЧИ</div>
+      <div className="section-label">{content.Venue.label}</div>
       <h2>
-        Встречаемся в <em>Freedom.</em>
+        {content.Venue.title}<em>{content.Venue.titleEmphasis}</em>
       </h2>
       <div className="address">
         <div>
           <p>{venue.address}</p>
           <p>
-            10 октября 2026 · 11:30–18:30
+            {content.Venue.date}
             <br />
-            Закрытие фестиваля — в 18:30
+            {content.Venue.closing}
           </p>
           <div className="venue-links">
             <a
@@ -23,7 +24,7 @@ export function Venue() {
               target="_blank"
               rel="noreferrer"
             >
-              Сайт коворкинга ↗
+              {content.Venue.website}
             </a>
             <a
               className="text-link"
@@ -31,7 +32,7 @@ export function Venue() {
               target="_blank"
               rel="noreferrer"
             >
-              Freedom ВКонтакте ↗
+              {content.Venue.social}
             </a>
           </div>
         </div>

@@ -1,15 +1,16 @@
+import content from "../site.json";
 import React from "react";
 import { experts } from "../experts";
 
 export function Experts() {
   return (
     <section id="experts" className="section experts wrap">
-      <div className="section-label">03 / ЛЮДИ ФЕСТИВАЛЯ</div>
+      <div className="section-label">{content.Experts.label}</div>
       <div className="section-heading">
         <h2>
-          Рядом — <em>люди.</em>
+          {content.Experts.title}<em>{content.Experts.titleEmphasis}</em>
         </h2>
-        <p>Со знаниями, опытом и вниманием к вам.</p>
+        <p>{content.Experts.description}</p>
       </div>
       <div className="expert-grid">
         {experts.map((expert) => (
@@ -20,7 +21,7 @@ export function Experts() {
                 href={expert.profile}
                 target="_blank"
                 rel="noreferrer"
-                aria-label={`Профиль ${expert.name} ВКонтакте`}
+                aria-label={content.Experts.profileLabel.replace("{name}", expert.name)}
               >
                 <img
                   className="expert-photo"
@@ -43,7 +44,7 @@ export function Experts() {
               target="_blank"
               rel="noreferrer"
             >
-              Профиль ВКонтакте ↗
+              {content.Experts.profile}
             </a>
           </article>
         ))}

@@ -1,19 +1,20 @@
+import content from "../site.json";
 import React from "react";
 import { Flower } from "./Flower";
 
 export function Closing() {
   return (
     <section className="closing wrap">
-      <span className="eyebrow">10 ОКТЯБРЯ · УВИДИМСЯ В ОРЛЕ</span>
+      <span className="eyebrow">{content.Closing.eyebrow}</span>
       <h2>
-        Приходите <em>собой.</em>
+        {content.Closing.title}<em>{content.Closing.titleEmphasis}</em>
       </h2>
       <p>
-        Без правильных ответов и лишних ожиданий.
+        {content.Closing.intro}
         <br />
-        Мы рады, что вы проведёте этот день с нами.
+        {content.Closing.description}
       </p>
-      <span className="sold-out">Все 35 мест уже заняты</span>
+      <span className="sold-out">{content.Closing.soldOut}</span>
       <Flower />
     </section>
   );

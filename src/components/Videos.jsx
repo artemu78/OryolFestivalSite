@@ -1,7 +1,8 @@
+import content from "../site.json";
 import React from "react";
 import { Flower } from "./Flower";
 
-const defaultCommunity = "https://vk.ru/club241058655";
+const defaultCommunity = content.links.community;
 
 export function Videos({ community = defaultCommunity }) {
   return (
@@ -10,20 +11,19 @@ export function Videos({ community = defaultCommunity }) {
         <span className="video-orbit" />
         <Flower />
         <span className="video-word">
-          услышать
+          {content.Videos.art}
           <br />
-          <em>друг друга.</em>
+          <em>{content.Videos.artEmphasis}</em>
         </span>
       </div>
       <div className="video-copy">
-        <div className="section-label">04 / ЖИВЫЕ ГОЛОСА</div>
+        <div className="section-label">{content.Videos.label}</div>
         <h2>
-          За каждым экспертом —<br />
-          <em>своя история.</em>
+          {content.Videos.title}<br />
+          <em>{content.Videos.titleEmphasis}</em>
         </h2>
         <p>
-          Здесь появятся видеознакомства с участниками команды. А пока —
-          беседы и новости фестиваля в нашем сообществе.
+          {content.Videos.description}
         </p>
         <a
           className="text-link"
@@ -31,9 +31,9 @@ export function Videos({ community = defaultCommunity }) {
           target="_blank"
           rel="noreferrer"
         >
-          Заглянуть в сообщество <span>↗</span>
+          {content.links.communityLink}<span>↗</span>
         </a>
-        <span className="video-soon">Видеознакомства — скоро</span>
+        <span className="video-soon">{content.Videos.soon}</span>
       </div>
     </section>
   );

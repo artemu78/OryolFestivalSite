@@ -1,9 +1,10 @@
+import content from "../site.json";
 import React, { useEffect, useRef, useState } from "react";
 import "./Header.css";
 import { Flower } from "./Flower";
 import { useAuth } from "../context/AuthContext";
 
-const defaultCommunity = "https://vk.ru/club241058655";
+const defaultCommunity = content.links.community;
 
 let sdkPromise;
 
@@ -79,11 +80,11 @@ function VkLogin() {
     if (!open || signedIn) return;
     let active = true;
     let oneTap;
-    setStatus("Загрузка VK ID…");
+    setStatus(content.Header.loading);
     const onError = (param1, param2) => {
       if (!active) return;
       console.error("VK ID error:", param1, param2);
-      setStatus("Не удалось войти через VK. Закройте окно и попробуйте снова.");
+      setStatus(content.Header.error);
     };
 
     loadVkId()
@@ -105,7 +106,7 @@ function VkLogin() {
           .on(VKID.WidgetEvents.ERROR, onError)
           .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, async (payload) => {
             if (!active) return;
-            setStatus("Выполняется вход…");
+            setStatus(content.Header.signingIn);
             try {
               const { user_id, expires_in, refresh_token, access_token } =
                 await VKID.Auth.exchangeCode(payload.code, payload.device_id);
@@ -152,7 +153,7 @@ function VkLogin() {
         ref={menuButton}
         type="button"
         className={`header-login-button${signedIn ? " header-login-button--signed-in" : ""}`}
-        aria-label={signedIn ? "Меню пользователя" : undefined}
+        aria-label={signedIn ? content.Header.userMenu : undefined}
         aria-expanded={signedIn ? userMenuOpen : open}
         aria-controls={signedIn ? "user-menu-panel" : "vk-login-panel"}
         onClick={() => {
@@ -174,7 +175,7 @@ function VkLogin() {
           />
         )}
         {signedIn && !avatar && <span aria-hidden="true">●</span>}
-        {!signedIn && (open ? "Закрыть вход" : "Войти через VK")}
+        {!signedIn && (open ? content.Header.closeLogin : content.Header.login)}
       </button>
       {signedIn && userMenuOpen && (
         <div id="user-menu-panel" className="header-user-menu">
@@ -189,7 +190,7 @@ function VkLogin() {
             setOpen(false);
             setStatus("");
             menuButton.current?.focus();
-          }}>Выйти</button>
+          }}>{content.Header.logout}</button>
         </div>
       )}
       {open && (
@@ -211,13 +212,12 @@ export function Header({ community = defaultCommunity }) {
       <a
         className="brand"
         href="#"
-        aria-label="Фестиваль ментального здоровья — главная"
+        aria-label={content.Header.homeLabel}
       >
         <Flower />
         <span>
-          фестиваль
-          <br />
-          ментального здоровья<span className="brand-city">ОРЁЛ · 2026</span>
+          {content.Header.brand}<br />
+          {content.Header.brandSecond}<span className="brand-city">{content.Header.city}</span>
         </span>
       </a>
       <button
@@ -226,17 +226,17 @@ export function Header({ community = defaultCommunity }) {
         aria-expanded={menuOpen}
         aria-controls="navigation"
       >
-        {menuOpen ? "Закрыть −" : "Меню +"}
+        {menuOpen ? content.Header.closeMenu : content.Header.menu}
       </button>
       <nav
         id="navigation"
         className={menuOpen ? "nav open" : "nav"}
-        aria-label="Основная навигация"
+        aria-label={content.Header.navigationLabel}
       >
         {[
-          ["О фестивале", "#about"],
-          ["Программа", "#program"],
-          ["Эксперты", "#experts"],
+          [content.Header.about, "#about"],
+          [content.Header.program, "#program"],
+          [content.Header.experts, "#experts"],
         ].map(([label, link]) => (
           <a key={link} href={link} onClick={() => setMenuOpen(false)}>
             {label}
@@ -248,7 +248,7 @@ export function Header({ community = defaultCommunity }) {
           target="_blank"
           rel="noreferrer"
         >
-          Мы ВКонтакте ↗
+          {content.Header.social}
         </a>
         <VkLogin />
       </nav>

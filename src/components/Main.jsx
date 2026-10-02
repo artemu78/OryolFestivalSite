@@ -1,3 +1,4 @@
+import content from "../site.json";
 import React from "react";
 import { Hero } from "./Hero";
 import { EventStrip } from "./EventStrip";
@@ -8,7 +9,7 @@ import { Videos } from "./Videos";
 import { Venue } from "./Venue";
 import { Closing } from "./Closing";
 
-const defaultCommunity = "https://vk.ru/club241058655";
+const defaultCommunity = content.links.community;
 
 export function Main({ community = defaultCommunity }) {
   return (

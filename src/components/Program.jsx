@@ -1,8 +1,9 @@
+import content from "../site.json";
 import React, { useState } from "react";
 import { sessions } from "../program";
 import { useProgramStack } from "../hooks/useProgramStack";
 
-const categories = ["Всё", ...new Set(sessions.map(({ category }) => category))];
+const categories = [content.Program.all, ...new Set(sessions.map(({ category }) => category))];
 
 function groupSessions(items) {
   const groups = new Map();
@@ -14,9 +15,9 @@ function groupSessions(items) {
 }
 
 export function Program() {
-  const [filter, setFilter] = useState("Всё");
+  const [filter, setFilter] = useState(content.Program.all);
   const visibleSessions = sessions.filter(
-    (item) => filter === "Всё" || item.category === filter,
+    (item) => filter === content.Program.all || item.category === filter,
   );
 
   const groups = groupSessions(visibleSessions);
@@ -25,17 +26,17 @@ export function Program() {
   return (
     <section id="program" className="program section">
       <div className="wrap">
-        <div className="section-label">02 / ПРОГРАММА</div>
+        <div className="section-label">{content.Program.label}</div>
         <div className="section-heading">
           <h2>
-            День <em>для себя.</em>
+            {content.Program.title}<em>{content.Program.titleEmphasis}</em>
           </h2>
-          <p>Поговорить. Попробовать. Почувствовать.</p>
+          <p>{content.Program.description}</p>
         </div>
         <div
           className="filters"
           role="group"
-          aria-label="Разделы программы"
+          aria-label={content.Program.filtersLabel}
         >
           {categories.map(
             (item) => (
@@ -46,7 +47,7 @@ export function Program() {
                 onClick={() => setFilter(item)}
               >
                 {item}
-                {item === "Всё" && <span>{sessions.length}</span>}
+                {item === content.Program.all && <span>{sessions.length}</span>}
               </button>
             ),
           )}
@@ -59,8 +60,8 @@ export function Program() {
                   <strong>{group.time}</strong>
                   {group.items.length > 1 && (
                     <span>{group.time === "14:30–17:30"
-                      ? "Также в это время · по предварительной записи"
-                      : "Одновременно · выберите событие"}</span>
+                      ? content.Program.appointments
+                      : content.Program.parallel}</span>
                   )}
                 </div>
                 <div className={`program-group-sessions${group.items.length > 1 ? " is-parallel" : ""}`}>
@@ -71,10 +72,7 @@ export function Program() {
           ))}
         </div>
         <p className="program-note">
-          С 14:30 до 17:30 события проходят параллельно в разных залах.
-          Индивидуальные сессии, массаж и круглые столы в Синей переговорной
-          — по предварительной записи. Число мест указано для формата и не
-          означает наличие свободных мест.
+          {content.Program.note}
         </p>
       </div>
     </section>

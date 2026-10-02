@@ -1,3 +1,4 @@
+import content from "../site.json";
 import React from "react";
 import { HeroMedia } from "./HeroMedia";
 
@@ -7,28 +8,26 @@ export function Hero() {
       <HeroMedia />
       <div className="hero-copy">
         <div className="eyebrow">
-          <span className="dot" /> 10 ОКТЯБРЯ 2026 · 11:30–18:30 · ОРЁЛ
+          <span className="dot" /> {content.Hero.eyebrow}
         </div>
         <h1>
-          Ближе
-          <br />к <em>себе.</em>
+          {content.Hero.title}
+          <br />{content.Hero.titleLead}<em>{content.Hero.titleEmphasis}</em>
         </h1>
         <p className="hero-subtitle">
-          Первый фестиваль
+          {content.Hero.subtitle}
           <br />
-          ментального здоровья в Орле
+          {content.Hero.subtitleSecond}
         </p>
         <p className="hero-description">
-          Один день, чтобы замедлиться, услышать себя
-          <br className="desktop-break" /> и поговорить о том, что
-          действительно важно.
+          {content.Hero.description}
+          <br className="desktop-break" />{content.Hero.descriptionSecond}
         </p>
         <a className="button" href="#program">
-          Что нас ждёт <span>↗</span>
+          {content.Hero.program}<span>↗</span>
         </a>
         <div className="hero-note">
-          <span className="small-star">✳</span> В атмосфере уважения и
-          принятия
+          <span className="small-star">✳</span> {content.Hero.note}
         </div>
       </div>
     </section>
