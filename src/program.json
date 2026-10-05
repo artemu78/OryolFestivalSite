@@ -21,7 +21,8 @@
       "Татьяна Кордычко",
       "Мария Цуканова",
       "Ольга Савушкина",
-      "Анастасия Игнашина"
+      "Анастасия Игнашина",
+      "Татьяна Хотеева"
     ]
   },
   {
@@ -65,10 +66,7 @@
     "location": "Скайп-переговорная",
     "access": "По предварительной записи · 6 мест",
     "background": "activity-backgrounds/06-psychologist-office.jpg",
-    "people": [
-      "Наталия Аракчеева",
-      "Ирина Черкасова"
-    ]
+    "people": ["Наталия Аракчеева", "Ирина Черкасова"]
   },
   {
     "time": "14:30–17:30",
@@ -79,9 +77,7 @@
     "location": "Сиреневая переговорная",
     "access": "По предварительной записи · 12 мест",
     "background": "activity-backgrounds/07-massage-office.jpg",
-    "people": [
-      "Ольга Муллаянова"
-    ]
+    "people": ["Ольга Муллаянова"]
   },
   {
     "time": "14:30–15:30",
@@ -92,9 +88,7 @@
     "location": "Синяя переговорная",
     "access": "По записи · до 9 участников",
     "background": "activity-backgrounds/08-teen-health.jpg",
-    "people": [
-      "Диана Аксёнова"
-    ]
+    "people": ["Диана Аксёнова"]
   },
   {
     "time": "14:30–15:30",
@@ -105,9 +99,7 @@
     "location": "Большой зал",
     "access": "Свободное участие",
     "background": "activity-backgrounds/09-peer-support.jpg",
-    "people": [
-      "Татьяна Кордычко"
-    ]
+    "people": ["Татьяна Кордычко"]
   },
   {
     "time": "15:30–16:30",
@@ -118,10 +110,7 @@
     "location": "Синяя переговорная",
     "access": "По записи · до 9 участников",
     "background": "activity-backgrounds/10-aromacode.jpg",
-    "people": [
-      "Екатерина Анича",
-      "Юлия Финина"
-    ]
+    "people": ["Екатерина Анича", "Юлия Финина"]
   },
   {
     "time": "15:30–16:30",
@@ -132,9 +121,7 @@
     "location": "Большой зал",
     "access": "Свободное участие",
     "background": "activity-backgrounds/11-nutrition-health.jpg",
-    "people": [
-      "Оксана Воронцова"
-    ]
+    "people": ["Оксана Воронцова"]
   },
   {
     "time": "16:30–17:30",
@@ -145,9 +132,7 @@
     "location": "Синяя переговорная",
     "access": "По записи · до 9 участников",
     "background": "activity-backgrounds/12-i-am-enough.jpg",
-    "people": [
-      "Дарья Герасимова"
-    ]
+    "people": ["Дарья Герасимова"]
   },
   {
     "time": "16:30–17:30",
@@ -158,9 +143,7 @@
     "location": "Большой зал",
     "access": "Свободное участие",
     "background": "activity-backgrounds/13-here-and-now.jpg",
-    "people": [
-      "Мария Цуканова"
-    ]
+    "people": ["Мария Цуканова"]
   },
   {
     "time": "17:30–18:30",
@@ -170,9 +153,7 @@
     "text": "Музыка, движение и возможность просто побыть собой. Сет от организатора и амбассадора «Экстатик Дэнс» в Орле DJ Анича.",
     "location": "Большой зал",
     "background": "activity-backgrounds/14-conscious-disco.jpg",
-    "people": [
-      "Екатерина Анича"
-    ]
+    "people": ["Екатерина Анича"]
   },
   {
     "time": "18:30",
