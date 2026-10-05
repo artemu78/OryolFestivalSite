@@ -4,15 +4,15 @@ import { adminApiUrl, adminRequest } from '../admin-api';
 import './Admin.css';
 
 export function AdminAccess() {
-  const { access_token, signedIn, setAdmin, setRegistered } = useAuth();
+  const { access_token, signedIn, setAdmin, setRegistered, setRoleError } = useAuth();
   useEffect(() => {
     let active = true;
-    setAdmin(false); setRegistered(false);
+    setAdmin(false); setRegistered(false); setRoleError("");
     if (signedIn && access_token && adminApiUrl) {
-      adminRequest(access_token, 'me').then(me => { if (active) { setAdmin(me.admin); setRegistered(me.registered); } }).catch(() => {});
+      adminRequest(access_token, 'me').then(me => { if (active) { setAdmin(me.admin); setRegistered(me.registered); } }).catch(error => { if (active) setRoleError(error.message); });
     }
     return () => { active = false; };
-  }, [signedIn, access_token, setAdmin, setRegistered]);
+  }, [signedIn, access_token, setAdmin, setRegistered, setRoleError]);
   return null;
 }
 

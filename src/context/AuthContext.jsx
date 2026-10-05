@@ -9,12 +9,15 @@ export function AuthProvider({ children }) {
   const [refresh_token, setRefreshToken] = useState(null);
   const [access_token, setAccessToken] = useState(null);
   const [userInfo, setUserInfo] = useState(null);
+  const [roleError, setRoleError] = useState("");
   const [registered, setRegistered] = useState(false);
   const [admin, setAdmin] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
 
   const value = useMemo(
     () => ({
+      roleError,
+      setRoleError,
       registered,
       setRegistered,
       admin,
@@ -32,7 +35,7 @@ export function AuthProvider({ children }) {
       setAccessToken,
       setUserInfo,
     }),
-    [registered, admin, user_id, expires_in, refresh_token, access_token, userInfo, signedIn],
+    [roleError, registered, admin, user_id, expires_in, refresh_token, access_token, userInfo, signedIn],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -20,7 +20,7 @@ def pool():
     return ydb.SessionPool(driver, size=1)
 
 def vk_identity(headers):
-    auth = headers.get('authorization', '')
+    auth = headers.get('x-vk-token', '')
     if not auth.startswith('Bearer ') or len(auth) > 8192:
         raise ApiError(401, 'Войдите через VK')
     data = parse.urlencode({'client_id': os.environ['VK_APP_ID'], 'access_token': auth[7:]}).encode()
@@ -110,7 +110,7 @@ def handler(event, context):
     allowed = os.environ.get('ALLOWED_ORIGINS','').split(',')
     response_headers = {'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','Vary':'Origin'}
     if origin in allowed:
-        response_headers.update({'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Headers':'Authorization, Content-Type','Access-Control-Allow-Methods':'POST, OPTIONS'})
+        response_headers.update({'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Headers':'X-VK-Token, Content-Type','Access-Control-Allow-Methods':'POST, OPTIONS'})
     def respond(status, body):
         return {'statusCode':status,'headers':response_headers,'body':json.dumps(body,ensure_ascii=False),'isBase64Encoded':False}
     if event.get('httpMethod') == 'OPTIONS':

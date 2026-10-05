@@ -34,6 +34,7 @@ function loadVkId() {
 
 function VkLogin() {
   const {
+    roleError,
     admin,
     setAdmin,
     userInfo,
@@ -186,6 +187,7 @@ function VkLogin() {
       </button>
       {signedIn && userMenuOpen && (
         <div id="user-menu-panel" className="header-user-menu">
+          {roleError && <p role="alert">Не удалось проверить права: {roleError}. Войдите повторно.</p>}
           {admin && <a href="#admin" onClick={() => setUserMenuOpen(false)}>{content.Header.admin}</a>}
           <button type="button" ref={logoutButton} onClick={() => {
             setAdmin(false);

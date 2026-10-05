@@ -104,3 +104,5 @@
     box-sizing: border-box;
   }
 }
+
+.header-user-menu p[role="alert"] { width: 240px; max-width: calc(100vw - 72px); padding: 8px; font-size: .85rem; }

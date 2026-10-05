@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 import index
 
 class PolicyTests(unittest.TestCase):
@@ -32,6 +32,14 @@ class PolicyTests(unittest.TestCase):
         self.assertEqual(index.int64('9223372036854775807'),9223372036854775807)
         for value in ['9223372036854775808',0,True,'0','-1','١٢٣','1.2']:
             with self.assertRaises(index.ApiError): index.int64(value)
+
+    def test_vk_token_uses_application_header(self):
+        import io
+        import os
+        with patch.dict(os.environ, {'VK_APP_ID':'54800266'}), patch.object(index.request, 'urlopen') as urlopen:
+            urlopen.return_value.__enter__.return_value = io.BytesIO(b'{"user":{"user_id":"10487183"}}')
+            self.assertEqual(index.vk_identity({'x-vk-token':'Bearer test-token'}),10487183)
+            self.assertIn(b'access_token=test-token', urlopen.call_args.args[0].data)
 
     def test_missing_bearer_rejected(self):
         with self.assertRaises(index.ApiError) as caught:
