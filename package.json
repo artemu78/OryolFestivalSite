@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "deploy:yandex": "PAGES_BASE_PATH=/ npm run build && terraform -chdir=infra/yandex apply"
+    "deploy:yandex": "PAGES_BASE_PATH=/ npm run build && if [ -z \"$YC_TOKEN\" ] && [ -z \"$YC_SERVICE_ACCOUNT_KEY_FILE\" ]; then export YC_SERVICE_ACCOUNT_KEY_FILE=\"$PWD/infra/yandex/authorized_key.json\"; fi && terraform -chdir=infra/yandex apply"
   },
   "dependencies": {
     "react": "^19.2.0",
