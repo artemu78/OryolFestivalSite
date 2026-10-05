@@ -9,5 +9,5 @@
 .admin-relation span { flex: 1; min-width: 180px; }
 .admin-page :focus-visible { outline: 3px solid #406a50; outline-offset: 3px; }
 @media(max-width:700px) { .admin-page { padding-top: 7rem; } .admin-relation span { flex-basis: 100%; } }
-.admin-page h1 { font-size: clamp(2rem, 5vw, 4rem); overflow-wrap: anywhere; }
+.admin-page h1 { font-size: clamp(2rem, calc(5vw * var(--font-scale)), 4rem); overflow-wrap: anywhere; }
 .admin-page h3, .admin-page p { overflow-wrap: anywhere; }
