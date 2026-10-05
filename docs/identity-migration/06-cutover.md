@@ -20,3 +20,8 @@ published; writes resumed. Legacy tables remain protected. See
 Real owner VK login was unavailable; authenticated SQL checks and HTTP
 credential-denial/CORS checks are recorded separately. Cyrillic custom-domain
 readiness is not confirmed although its direct bucket content is verified.
+
+Implementation committed and pushed to main (`b592b90`); GitHub Pages deployment
+is tracked at https://github.com/artemu78/OryolFestivalSite/actions/runs/37372760764.
+The workflow was queued at the time this record was saved; live deployment
+completion must be checked independently.

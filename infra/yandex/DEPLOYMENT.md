@@ -76,10 +76,16 @@ no real user token was available. They do not block write resumption.
 Exported all 13 public profiles from live YDB before building/publishing.
 Both Object Storage copies have exact HTML/JS/CSS hashes matching the root build;
 Latin custom HTTPS and HTTP also match. Cyrillic direct storage endpoint works,
-but custom-domain HTTP failed and HTTPS returned different HTML during this
-check; existing DNS/certificate configuration was preserved. Its custom-domain
-readiness remains a separate unresolved deployment limitation.
+but the custom domain resolves to registrar parking (A 95.163.244.138).
+Latest HTTP/HTTPS responses both returned 200 from openresty with REG.RU parking
+content, not the festival. Existing DNS/certificate configuration was preserved;
+custom-domain readiness remains a separate unresolved deployment limitation.
 
 Final full Terraform plan reports no changes. No secrets, private exports,
 local state or plans are committed. Preserved the preexisting admin matrix/CSS
 and numeric programme IDs while integrating the shared identity schema.
+
+Implementation commit `b592b90c601a8cf2e406baddf34525272ee173e4` was pushed to
+main; Pages workflow: https://github.com/artemu78/OryolFestivalSite/actions/runs/37372760764.
+Workflow was queued when this deployment record was saved. Verify its completion
+and the latest documentation commit's workflow before treating Pages as published.
