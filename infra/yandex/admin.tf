@@ -41,6 +41,52 @@ resource "yandex_ydb_table" "events" {
     type     = "Utf8"
     not_null = true
   }
+  # Nullable additions allow in-place migration and existing admin event creation.
+  column {
+    name     = "time_start"
+    type     = "Timestamp"
+    not_null = false
+  }
+  column {
+    name     = "time_end"
+    type     = "Timestamp"
+    not_null = false
+  }
+  column {
+    name     = "category"
+    type     = "Utf8"
+    not_null = false
+  }
+  column {
+    name     = "tag"
+    type     = "Utf8"
+    not_null = false
+  }
+  column {
+    name     = "location"
+    type     = "Utf8"
+    not_null = false
+  }
+  column {
+    name     = "access"
+    type     = "Utf8"
+    not_null = false
+  }
+  column {
+    name     = "background"
+    type     = "Utf8"
+    not_null = false
+  }
+  column {
+    name     = "program_id"
+    type     = "Int64"
+    not_null = false
+  }
+  column {
+    name     = "sort_order"
+    type     = "Int64"
+    not_null = false
+  }
   lifecycle {
     prevent_destroy = true
   }
@@ -97,7 +143,7 @@ resource "yandex_function" "admin" {
   entrypoint         = "index.handler"
   memory             = 256
   execution_timeout  = "30"
-  concurrency        = 1
+  concurrency        = 8
   service_account_id = yandex_iam_service_account.hello.id
   user_hash          = data.archive_file.admin.output_base64sha256
   environment = {
@@ -114,14 +160,6 @@ resource "yandex_function_iam_member" "admin_public" {
   function_id = yandex_function.admin.id
   role        = "serverless.functions.invoker"
   member      = "system:allUsers"
-}
-resource "yandex_function_scaling_policy" "admin" {
-  function_id = yandex_function.admin.id
-  policy {
-    tag                  = "$latest"
-    zone_instances_limit = 1
-    zone_requests_limit  = 5
-  }
 }
 output "admin_api_url" {
   value = "https://functions.yandexcloud.net/${yandex_function.admin.id}"

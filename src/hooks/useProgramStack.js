@@ -60,7 +60,7 @@ export function useProgramStack(filter) {
         group.removeAttribute("data-covered");
       });
     };
-  }, [filter]);
+  }, [filter, stackRef.current?.children.length]);
 
   return stackRef;
 }

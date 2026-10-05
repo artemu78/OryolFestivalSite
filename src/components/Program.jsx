@@ -1,9 +1,26 @@
 import content from "../site.json";
-import React, { useState } from "react";
-import { sessions } from "../program";
+import React, { useMemo, useState } from "react";
+import { useData } from "../context/DataContext";
+import { expertsById } from "../experts";
 import { useProgramStack } from "../hooks/useProgramStack";
 
-const categories = [content.Program.all, ...new Set(sessions.map(({ category }) => category))];
+function formatEventTime(startUs, endUs) {
+  if (!startUs) return "";
+  const start = new Date(startUs / 1000);
+  const startStr = start.toLocaleTimeString("ru-RU", {
+    timeZone: "Europe/Moscow",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  if (!endUs) return startStr;
+  const end = new Date(endUs / 1000);
+  const endStr = end.toLocaleTimeString("ru-RU", {
+    timeZone: "Europe/Moscow",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  return `${startStr}–${endStr}`;
+}
 
 function groupSessions(items) {
   const groups = new Map();
@@ -15,12 +32,61 @@ function groupSessions(items) {
 }
 
 export function Program() {
+  const { events, hosts, loading, dataError } = useData();
   const [filter, setFilter] = useState(content.Program.all);
-  const visibleSessions = sessions.filter(
-    (item) => filter === content.Program.all || item.category === filter,
+
+  const sessions = useMemo(() => {
+    if (!Array.isArray(events) || events.length === 0) return [];
+    const hostsByEvent = new Map();
+    if (Array.isArray(hosts)) {
+      hosts.forEach(({ event_id, user_id }) => {
+        if (!hostsByEvent.has(event_id)) hostsByEvent.set(event_id, []);
+        hostsByEvent.get(event_id).push(user_id);
+      });
+    }
+
+    const sorted = [...events].sort(
+      (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
+    );
+
+    return sorted.map((ev) => {
+      const hostIds = hostsByEvent.get(ev.id) || [];
+      const people = hostIds
+        .map((uid) => expertsById[uid])
+        .filter(Boolean);
+
+      return {
+        id: ev.id,
+        time: formatEventTime(ev.time_start, ev.time_end),
+        category: ev.category || "Встреча",
+        tag: ev.tag || "",
+        title: ev.title || "",
+        text: ev.description || "",
+        location: ev.location || undefined,
+        access: ev.access || undefined,
+        background: ev.background || undefined,
+        people: people.length > 0 ? people : undefined,
+      };
+    });
+  }, [events, hosts]);
+
+  const categories = useMemo(
+    () => [
+      content.Program.all,
+      ...new Set(sessions.map(({ category }) => category).filter(Boolean)),
+    ],
+    [sessions],
   );
 
-  const groups = groupSessions(visibleSessions);
+  const visibleSessions = useMemo(
+    () =>
+      sessions.filter(
+        (item) => filter === content.Program.all || item.category === filter,
+      ),
+    [sessions, filter],
+  );
+
+  const groups = useMemo(() => groupSessions(visibleSessions), [visibleSessions]);
   const stackRef = useProgramStack(filter);
 
   return (
@@ -38,20 +104,28 @@ export function Program() {
           role="group"
           aria-label={content.Program.filtersLabel}
         >
-          {categories.map(
-            (item) => (
-              <button
-                key={item}
-                aria-pressed={filter === item}
-                className={filter === item ? "active" : ""}
-                onClick={() => setFilter(item)}
-              >
-                {item}
-                {item === content.Program.all && <span>{sessions.length}</span>}
-              </button>
-            ),
-          )}
+          {categories.map((item) => (
+            <button
+              key={item}
+              aria-pressed={filter === item}
+              className={filter === item ? "active" : ""}
+              onClick={() => setFilter(item)}
+            >
+              {item}
+              {item === content.Program.all && <span>{sessions.length}</span>}
+            </button>
+          ))}
         </div>
+        {loading && sessions.length === 0 && (
+          <p role="status" className="program-status">
+            Загрузка программы…
+          </p>
+        )}
+        {dataError && sessions.length === 0 && (
+          <p role="alert" className="program-error">
+            {dataError}
+          </p>
+        )}
         <div className="sessions program-stack" ref={stackRef}>
           {groups.map((group) => (
             <div className="program-group" key={group.time}>
@@ -59,27 +133,35 @@ export function Program() {
                 <div className="program-group-heading">
                   <strong>{group.time}</strong>
                   {group.items.length > 1 && (
-                    <span>{group.time === "14:30–17:30"
-                      ? content.Program.appointments
-                      : content.Program.parallel}</span>
+                    <span>
+                      {group.time === "14:30–17:30"
+                        ? content.Program.appointments
+                        : content.Program.parallel}
+                    </span>
                   )}
                 </div>
-                <div className={`program-group-sessions${group.items.length > 1 ? " is-parallel" : ""}`}>
-                  {group.items.map((item) => <SessionCard key={item.title} item={item} />)}
+                <div
+                  className={`program-group-sessions${group.items.length > 1 ? " is-parallel" : ""}`}
+                >
+                  {group.items.map((item) => (
+                    <SessionCard
+                      key={item.id || item.title}
+                      item={item}
+                      index={sessions.indexOf(item)}
+                    />
+                  ))}
                 </div>
               </div>
             </div>
           ))}
         </div>
-        <p className="program-note">
-          {content.Program.note}
-        </p>
+        <p className="program-note">{content.Program.note}</p>
       </div>
     </section>
   );
 }
 
-function SessionCard({ item }) {
+function SessionCard({ item, index }) {
   return (
     <article className="session">
       {item.background && (
@@ -123,7 +205,7 @@ function SessionCard({ item }) {
         </div>
       </div>
       <span className="session-number">
-        {String(sessions.indexOf(item) + 1).padStart(2, "0")}
+        {String(index + 1).padStart(2, "0")}
       </span>
     </article>
   );

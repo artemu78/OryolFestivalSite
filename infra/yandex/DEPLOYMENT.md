@@ -89,3 +89,43 @@ Implementation commit `b592b90c601a8cf2e406baddf34525272ee173e4` was pushed to
 main; Pages workflow: https://github.com/artemu78/OryolFestivalSite/actions/runs/37372760764.
 Workflow was queued when this deployment record was saved. Verify its completion
 and the latest documentation commit's workflow before treating Pages as published.
+
+## Programme import — 2026-10-06
+
+Live preflight found Events and HostsV2 empty; all 13 programme host IDs existed
+in Users and ExpertProfiles. Imported all 15 entries from `src/program.json`
+into Events (`program-01` … `program-15`) and 20 exact host relationships into
+HostsV2. Numeric source IDs are retained in `program_id`, array order in
+`sort_order`, and `text` in `description`. Added nullable time, category, tag,
+location, access and background columns alongside the two integer columns.
+Users, profiles, roles and attendance were not modified.
+
+The importer verified all mapped fields and host pairs inside the transaction
+and in a separate read after commit. Repeat execution completed without
+additional rows. Backup snapshots (mode 0600) are in
+`/private/tmp/festival-program-before-import-20261006.json` and
+`/private/tmp/festival-program-repeat-check-20261006.json`; these are temporary,
+not durable backup storage.
+
+Validation: 20 migration/public-export tests and 17 admin tests passed; site
+build, public content/portrait validation, Terraform validation/formatting and
+whitespace checks passed. Targeted Events Terraform plan reports no changes;
+this does not claim a full infrastructure drift check. No site publication,
+commit or push was performed. The public site still reads its static JSON;
+HostsV2 stores host membership without the original array display order.
+
+### Event timestamp conversion — 2026-10-06
+
+Replaced the live Events.time column with nullable Timestamp columns time_start
+and time_end. Backfill used the live time strings with date 2026-10-10 and
+Europe/Moscow timezone, converting to UTC. All 15 start times and 14 end times
+were verified before dropping time; closing at 18:30 has NULL end. Full event
+rows were compared after removal to ensure other fields were retained. The
+pre-change Events backup is `/private/tmp/festival-event-times-before-20261006.json`
+(mode 0600, temporary storage). HostsV2 was not modified.
+
+Updated Terraform and the program importer so future imports produce timestamps
+without recreating time. Repeat migration reports already migrated. Targeted
+Events Terraform plan reports no changes. All 24 migration/public-export tests,
+17 admin tests, public content validation, site build and whitespace/formatting
+checks passed. No site deployment, commit or push was performed.

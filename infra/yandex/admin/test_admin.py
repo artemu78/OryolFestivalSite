@@ -93,10 +93,19 @@ class PolicyTests(unittest.TestCase):
         self.assertEqual(self.call('me',actor=999),dict(user_id=None,vkontakte_id='999',name=None,attendee=False,admin=False,expert=False))
         self.assertEqual(self.session.tx.writes,0)
         self.assertEqual(len(self.table('Users')),2)
-        self.denied(403,'list',actor=999)
+        listing = self.call('list',actor=999)
+        self.assertEqual(set(listing),{'users','roles','expert_profiles','events','attendance','hosts'})
+
+    def test_unauthenticated_user_can_list_but_not_manage(self):
+        listing = self.call('list',actor=None)
+        self.assertEqual(set(listing),{'users','roles','expert_profiles','events','attendance','hosts'})
+        self.denied(401,'me',actor=None)
+        for action in ('saveUser','deleteUser','saveRoles','saveExpertProfile','deleteExpertProfile','saveEvent','deleteEvent','attendance','host'):
+            self.denied(401,action,actor=None)
+            self.assertEqual(self.session.tx.writes,0)
 
     def test_non_admin_cannot_manage(self):
-        for action in ('list','saveUser','deleteUser','saveRoles','saveExpertProfile','deleteExpertProfile','saveEvent','deleteEvent','attendance','host'):
+        for action in ('saveUser','deleteUser','saveRoles','saveExpertProfile','deleteExpertProfile','saveEvent','deleteEvent','attendance','host'):
             self.denied(403,action,actor=456)
             self.assertEqual(self.session.tx.writes,0)
 

@@ -164,3 +164,67 @@ Terraform to both buckets, then commit/push for the separate GitHub Pages workfl
 Never publish bootstrap after admin editing. Preserve legacy tables and private
 rollback artifacts; after writes resume rollback requires freezing/exporting the
 new system and reconciling new changes, not blindly restoring the old snapshot.
+
+## Programme import into Events and HostsV2
+
+`migrate-program.py` imports every field from `src/program.json`. Existing event
+keys remain `program-01` … `program-15`; the JSON numeric ID is `program_id`.
+`text` maps to the existing `description` column. Additional nullable columns
+are `time_start`, `time_end` (Timestamp), `category`, `tag`, `location`, `access`, `background`, `program_id`
+(Int64) and `sort_order` (Int64, zero-based JSON array order). Missing optional
+values become NULL. Nullable columns remain compatible with the admin API,
+which currently edits only event title/description.
+
+Each `people` entry must exactly match `Users.id` and have an `ExpertProfiles`
+record. The importer stores one `(event_id, user_id)` pair in `HostsV2`;
+this two-column relation stores membership, not the array's display order.
+The existing static JSON retains display order and continues to feed the public
+page. Importing the database does not publish the site or change its data loader.
+
+With the same operator environment and Python requirements as above:
+
+```sh
+python infra/yandex/migrate-program.py
+python infra/yandex/migrate-program.py --execute --backup /private/path/program-before-import.json
+```
+
+Dry-run reads and validates without writes. Execution first saves Events and
+HostsV2 to a new private backup outside the repository, then adds only missing
+nullable columns in place (also declared in `admin.tf`). Schema changes are
+separate from the data transaction; on import failure, new columns may remain.
+It imports and verifies all event fields and host links in one serializable
+transaction, rechecking user/profile existence there. Unexpected concurrent
+Events/HostsV2 edits abort the import; rerun with a fresh backup. Exact repeat
+execution is safe. Missing mapped events are inserted; unrelated rows remain
+unchanged. Conflicting existing host links block execution instead of being
+silently removed. No users, roles, profiles or attendance records are modified.
+Keep the backup for rollback; restore only after reconciling subsequent edits.
+
+### Event timestamps
+
+`Events.time_start` and `Events.time_end` are nullable YDB `Timestamp` columns.
+The source clock values belong to **10 October 2026, Europe/Moscow (UTC+03:00)**;
+for example, `11:30–11:50` becomes `2026-10-10T08:30:00Z` to
+`2026-10-10T08:50:00Z`. A single `18:30` becomes start `15:30:00Z` with NULL end;
+no duration is inferred. Missing legacy time becomes two NULLs. Malformed,
+reversed or zero-length ranges abort conversion. The pinned Python SDK uses UTC
+epoch microseconds for these Timestamp values by default.
+
+To migrate an existing `time` column, use the operator environment above:
+
+```sh
+python infra/yandex/migrate-event-times.py
+python infra/yandex/migrate-event-times.py --execute --backup /private/path/event-times-before.json
+```
+
+Run under exclusive operator ownership of schema/time writes; the current admin
+API does not write these fields. The script backs up Events, adds timestamps,
+backfills from **live Events.time**, checks all row values transactionally and
+again after commit, then drops `time` and verifies the final schema and data.
+DDL is separate from the data transaction. If interrupted, repeat with a fresh
+backup; conflicting non-NULL timestamps block execution. If `time` is already
+absent, it verifies the replacement types and reports already migrated.
+Run this script **before** applying Terraform's column removal: Terraform alone
+does not migrate values. `migrate-program.py` now converts JSON time strings to
+timestamps directly and never recreates the old database column. Static JSON
+and the site's display format remain unchanged.

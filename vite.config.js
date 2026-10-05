@@ -12,5 +12,25 @@ export default defineConfig({
         .replace('%SITE_DESCRIPTION%', escape(content.metadata.description));
     },
   }],
-  server: { host: '127.0.0.1' },
+  server: {
+    host: '127.0.0.1',
+    allowedHosts: [
+      'mentalhealthfestival.ru',
+      'xn--80aaecegccue9ackpcqbca3bewh1b5qgk8f.xn--p1ai',
+    ],
+    proxy: {
+      '/api/admin': {
+        target: 'https://functions.yandexcloud.net',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/admin/, '/d4e278ej3sclqe0bfsro'),
+      },
+    },
+  },
+  preview: {
+    host: '127.0.0.1',
+    allowedHosts: [
+      'mentalhealthfestival.ru',
+      'xn--80aaecegccue9ackpcqbca3bewh1b5qgk8f.xn--p1ai',
+    ],
+  },
 });

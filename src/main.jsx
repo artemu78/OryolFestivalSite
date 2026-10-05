@@ -6,6 +6,7 @@ import { createRoot } from "react-dom/client";
 import "./styles.css";
 import { Header, Main, Footer } from "./components";
 import { AuthProvider } from "./context/AuthContext";
+import { DataProvider } from "./context/DataContext";
 import { ParticipantWelcome } from "./components/ParticipantWelcome";
 
 const community = content.links.community;
@@ -27,7 +28,14 @@ function App() {
       </a>
       <Header community={community} />
       <AdminAccess />
-      {adminPage ? <Admin key={accessKey} /> : <><ParticipantWelcome /><Main community={community} /></>}
+      {adminPage ? (
+        <Admin key={accessKey} />
+      ) : (
+        <>
+          <ParticipantWelcome />
+          <Main community={community} />
+        </>
+      )}
       <Footer community={community} studioContact={studioContact} />
     </>
   );
@@ -36,7 +44,9 @@ function App() {
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <AuthProvider>
-      <App />
+      <DataProvider>
+        <App />
+      </DataProvider>
     </AuthProvider>
   </React.StrictMode>,
 );

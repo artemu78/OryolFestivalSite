@@ -17,7 +17,7 @@ class ApiError(Exception):
 def pool():
     driver = ydb.Driver(endpoint=os.environ['YDB_ENDPOINT'], database=os.environ['YDB_DATABASE'], credentials=ydb.iam.MetadataUrlCredentials())
     driver.wait(timeout=5, fail_fast=True)
-    return ydb.SessionPool(driver, size=1)
+    return ydb.SessionPool(driver, size=10)
 
 def vk_identity(headers):
     auth = headers.get('x-vk-token', '')
@@ -82,7 +82,7 @@ def operation(session, actor, action, body, new_id):
         if len(admins) <= 1:
             raise ApiError(409, 'Нельзя удалить последнего администратора')
     try:
-        identities = rows('SELECT user_id FROM VkIdentities WHERE vkontakte_id=$actor;', actor=actor)
+        identities = rows('SELECT user_id FROM VkIdentities WHERE vkontakte_id=$actor;', actor=actor) if actor is not None else []
         actor_uid = identities[0]['user_id'] if identities else None
         actor_user = None
         if actor_uid:
@@ -92,27 +92,31 @@ def operation(session, actor, action, body, new_id):
             else:
                 actor_uid = None
         actor_roles = roles(actor_uid) if actor_uid else set()
-        if action == 'me':
+        if action == 'list':
+            result = {}
+            for key, table, order in [('users','Users','id'), ('roles','UserRoles','user_id, role'),
+                                     ('expert_profiles','ExpertProfiles','sort_order, user_id'),
+                                     ('events','Events','id'), ('attendance','AttendanceV2','user_id, event_id'),
+                                     ('hosts','HostsV2','user_id, event_id')]:
+                result[key] = rows(f'SELECT * FROM {table} ORDER BY {order};')
+            for row in result['users']:
+                if row['vkontakte_id'] is not None:
+                    row['vkontakte_id'] = str(row['vkontakte_id'])
+        elif action == 'me':
+            if not actor:
+                raise ApiError(401, 'Войдите через VK')
             expert = bool(actor_uid and rows('SELECT user_id FROM ExpertProfiles WHERE user_id=$uid;', uid=actor_uid))
             result = {'user_id':actor_uid, 'vkontakte_id':str(actor),
                       'name':actor_user['name'] if actor_user else None,
                       'attendee':'attendee' in actor_roles, 'admin':'admin' in actor_roles, 'expert':expert}
         else:
+            if not actor:
+                raise ApiError(401, 'Войдите через VK')
             if 'admin' not in actor_roles:
                 raise ApiError(403, 'Доступ только для администратора')
-            if action != 'list' and os.environ.get('ADMIN_WRITES_DISABLED', 'false').lower() == 'true':
+            if os.environ.get('ADMIN_WRITES_DISABLED', 'false').lower() == 'true':
                 raise ApiError(503, 'Изменения временно приостановлены')
-            if action == 'list':
-                result = {}
-                for key, table, order in [('users','Users','id'), ('roles','UserRoles','user_id, role'),
-                                         ('expert_profiles','ExpertProfiles','sort_order, user_id'),
-                                         ('events','Events','id'), ('attendance','AttendanceV2','user_id, event_id'),
-                                         ('hosts','HostsV2','user_id, event_id')]:
-                    result[key] = rows(f'SELECT * FROM {table} ORDER BY {order};')
-                for row in result['users']:
-                    if row['vkontakte_id'] is not None:
-                        row['vkontakte_id'] = str(row['vkontakte_id'])
-            elif action == 'saveUser':
+            if action == 'saveUser':
                 uid = text(body.get('id',new_id),100,True)
                 existing = user(uid) if 'id' in body else None
                 vk = None if body.get('vkontakte_id') is None else int64(body['vkontakte_id'])
@@ -227,28 +231,43 @@ def operation(session, actor, action, body, new_id):
 def handler(event, context):
     headers = {k.lower():v for k,v in (event.get('headers') or {}).items()}
     origin = headers.get('origin')
-    allowed = os.environ.get('ALLOWED_ORIGINS','').split(',')
-    response_headers = {'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','Vary':'Origin'}
-    if origin in allowed:
-        response_headers.update({'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Headers':'X-VK-Token, Content-Type','Access-Control-Allow-Methods':'POST, OPTIONS'})
+    response_headers = {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-store',
+        'Vary': 'Origin',
+        'Access-Control-Allow-Origin': origin or '*',
+        'Access-Control-Allow-Headers': 'X-VK-Token, Content-Type',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    }
     def respond(status, body):
         return {'statusCode':status,'headers':response_headers,'body':json.dumps(body,ensure_ascii=False),'isBase64Encoded':False}
-    if event.get('httpMethod') == 'OPTIONS':
+    method = event.get('httpMethod', 'GET').upper()
+    if method == 'OPTIONS':
         return respond(204,{})
-    if event.get('httpMethod') != 'POST':
+    if method not in ('GET', 'POST'):
         return respond(405,{'error':'Method not allowed'})
     try:
-        actor = vk_identity(headers)
         raw = event.get('body') or '{}'
         if len(raw) > 24000:
             raise ApiError(413,'Слишком большой запрос')
         if event.get('isBase64Encoded'):
             raw = base64.b64decode(raw).decode()
-        body = json.loads(raw)
+        body = json.loads(raw) if raw.strip() else {}
         if not isinstance(body,dict):
             raise ApiError(400,'Некорректный запрос')
+        action = body.get('action') or ('list' if method == 'GET' else 'list')
+        actor = None
+        if 'x-vk-token' in headers:
+            try:
+                actor = vk_identity(headers)
+            except ApiError:
+                if action != 'list':
+                    raise
+                actor = None
+        elif action != 'list':
+            actor = vk_identity(headers)
         new_id = str(uuid.uuid4())
-        result = pool().retry_operation_sync(lambda session: operation(session,actor,body.get('action'),body,new_id))
+        result = pool().retry_operation_sync(lambda session: operation(session,actor,action,body,new_id))
         return respond(200,result)
     except ApiError as exc:
         return respond(exc.status,{'error':exc.message})
