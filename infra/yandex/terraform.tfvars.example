@@ -1,0 +1,7 @@
+folder_id = "b1g5fdg0o0t57rnfm9j4"
+
+# Set true only when choosing Cloud DNS and preparing delegation at REG.RU.
+manage_dns = false
+
+# First apply: false. After DNS validation and certificate issuance: true.
+enable_https = false

@@ -1,3 +1,15 @@
 node_modules/
 dist/
 .DS_Store
+
+# Local cloud credentials, Terraform state, plans, and function packages.
+infra/yandex/.terraform/
+infra/yandex/.build/
+infra/yandex/*.tfstate*
+infra/yandex/*.tfplan
+infra/yandex/terraform.tfvars
+infra/yandex/*.auto.tfvars
+infra/yandex/crash.log
+infra/yandex/crash.*.log
+**/__pycache__/
+infra/yandex/authorized_key.json

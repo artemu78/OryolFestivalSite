@@ -9,10 +9,16 @@ export function AuthProvider({ children }) {
   const [refresh_token, setRefreshToken] = useState(null);
   const [access_token, setAccessToken] = useState(null);
   const [userInfo, setUserInfo] = useState(null);
+  const [registered, setRegistered] = useState(false);
+  const [admin, setAdmin] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
 
   const value = useMemo(
     () => ({
+      registered,
+      setRegistered,
+      admin,
+      setAdmin,
       user_id,
       expires_in,
       refresh_token,
@@ -26,7 +32,7 @@ export function AuthProvider({ children }) {
       setAccessToken,
       setUserInfo,
     }),
-    [user_id, expires_in, refresh_token, access_token, userInfo, signedIn],
+    [registered, admin, user_id, expires_in, refresh_token, access_token, userInfo, signedIn],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

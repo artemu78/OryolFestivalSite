@@ -1,5 +1,7 @@
 import content from "./site.json";
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useAuth } from "./context/AuthContext";
+import { Admin, AdminAccess } from "./components/Admin";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
 import { Header, Main, Footer } from "./components";
@@ -11,14 +13,21 @@ const community = content.links.community;
 const studioContact = "";
 
 function App() {
+  const { access_token: accessKey } = useAuth();
+  const [adminPage, setAdminPage] = useState(location.hash === "#admin");
+  useEffect(() => {
+    const change = () => setAdminPage(location.hash === "#admin");
+    window.addEventListener("hashchange", change);
+    return () => window.removeEventListener("hashchange", change);
+  }, []);
   return (
     <>
       <a className="skip-link" href="#main">
         {content.main.skip}
       </a>
       <Header community={community} />
-      <ParticipantWelcome />
-      <Main community={community} />
+      <AdminAccess />
+      {adminPage ? <Admin key={accessKey} /> : <><ParticipantWelcome /><Main community={community} /></>}
       <Footer community={community} studioContact={studioContact} />
     </>
   );

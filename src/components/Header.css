@@ -36,7 +36,8 @@
   object-fit: cover;
 }
 .header-login-button:focus-visible,
-.header-user-menu button:focus-visible {
+.header-user-menu button:focus-visible,
+.header-user-menu a:focus-visible {
   outline: 2px solid var(--green);
   outline-offset: 4px;
 }
@@ -52,7 +53,11 @@
   box-shadow: 0 8px 24px #203e3320;
   z-index: 10;
 }
-.header-user-menu button {
+.header-user-menu button,
+.header-user-menu a {
+  display: block;
+  box-sizing: border-box;
+  text-decoration: none;
   width: 100%;
   padding: 10px 14px;
   border: 0;
@@ -63,7 +68,8 @@
   text-align: left;
   cursor: pointer;
 }
-.header-user-menu button:hover {
+.header-user-menu button:hover,
+.header-user-menu a:hover {
   background: #203e3310;
 }
 @media (max-width: 700px) {

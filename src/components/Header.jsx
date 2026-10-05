@@ -34,6 +34,8 @@ function loadVkId() {
 
 function VkLogin() {
   const {
+    admin,
+    setAdmin,
     userInfo,
     signedIn,
     setSignedIn,
@@ -83,16 +85,21 @@ function VkLogin() {
     setStatus(content.Header.loading);
     const onError = (param1, param2) => {
       if (!active) return;
-      console.error("VK ID error:", param1, param2);
+
       setStatus(content.Header.error);
     };
+
+    if (location.protocol !== "https:" && !["localhost", "127.0.0.1"].includes(location.hostname)) {
+      setStatus("Для входа через VK откройте сайт по HTTPS. Сертификат ещё настраивается.");
+      return;
+    }
 
     loadVkId()
       .then((VKID) => {
         if (!active) return;
         VKID.Config.init({
           app: 54800266,
-          redirectUrl: "https://artemu78.github.io/OryolFestivalSite/",
+          redirectUrl: new URL(import.meta.env.BASE_URL, window.location.origin).href,
           responseMode: VKID.ConfigResponseMode.Callback,
           source: VKID.ConfigSource.LOWCODE,
           scope: "",
@@ -179,7 +186,9 @@ function VkLogin() {
       </button>
       {signedIn && userMenuOpen && (
         <div id="user-menu-panel" className="header-user-menu">
+          {admin && <a href="#admin" onClick={() => setUserMenuOpen(false)}>{content.Header.admin}</a>}
           <button type="button" ref={logoutButton} onClick={() => {
+            setAdmin(false);
             setUserId(null);
             setExpiresIn(null);
             setRefreshToken(null);
