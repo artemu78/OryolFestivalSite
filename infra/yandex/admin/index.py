@@ -45,63 +45,183 @@ def text(value, limit, required=False):
         raise ApiError(400, 'Проверьте текстовые поля')
     return value.strip()
 
+@lru_cache(maxsize=1)
+def allowed_photos():
+    with open(os.path.join(os.path.dirname(__file__), 'allowed-photos.json'), encoding='utf-8') as source:
+        return frozenset(json.load(source))
+
+
 def operation(session, actor, action, body, new_id):
     tx = session.transaction(ydb.SerializableReadWrite())
     def run(sql, **params):
-        types = {'actor':'Int64', 'pid':'Int64', 'eid':'Utf8', 'title':'Utf8', 'description':'Utf8', 'note':'Utf8', 'admin':'Bool'}
+        types = {'actor':'Int64', 'vk':'Int64', 'linked_vk':'Optional<Int64>',
+                 'uid':'Utf8', 'eid':'Utf8', 'name':'Utf8', 'note':'Utf8',
+                 'title':'Utf8', 'description':'Utf8', 'role':'Utf8',
+                 'photo':'Utf8', 'profile_url':'Utf8', 'professional_title':'Utf8',
+                 'bio':'Utf8', 'sort_order':'Int64'}
         declarations = ' '.join(f'DECLARE ${key} AS {types[key]};' for key in params)
         return tx.execute(session.prepare(declarations + sql), {'$'+k:v for k,v in params.items()})
+    def rows(sql, **params):
+        result_set = run(sql, **params)[0]
+        if getattr(result_set, 'truncated', False):
+            raise ApiError(503, 'Слишком большой набор данных')
+        return [dict(row) for row in result_set.rows]
+    def user(uid):
+        found = rows('SELECT * FROM Users WHERE id=$uid;', uid=uid)
+        if not found:
+            raise ApiError(404, 'Пользователь удалён')
+        return found[0]
+    def roles(uid):
+        return {row['role'] for row in rows('SELECT role FROM UserRoles WHERE user_id=$uid;', uid=uid)}
+    def protect_admin(uid, current_roles):
+        if 'admin' not in current_roles:
+            return
+        if uid == actor_uid:
+            raise ApiError(400, 'Нельзя удалить свою роль администратора')
+        admins = rows("SELECT user_id FROM UserRoles WHERE role='admin';")
+        if len(admins) <= 1:
+            raise ApiError(409, 'Нельзя удалить последнего администратора')
     try:
-        rows = run('SELECT admin FROM Participants WHERE vkontakte_id=$actor;', actor=actor)[0].rows
-        admin = bool(rows and rows[0].admin)
+        identities = rows('SELECT user_id FROM VkIdentities WHERE vkontakte_id=$actor;', actor=actor)
+        actor_uid = identities[0]['user_id'] if identities else None
+        actor_user = None
+        if actor_uid:
+            found = rows('SELECT * FROM Users WHERE id=$uid;', uid=actor_uid)
+            if found and found[0]['vkontakte_id'] == actor:
+                actor_user = found[0]
+            else:
+                actor_uid = None
+        actor_roles = roles(actor_uid) if actor_uid else set()
         if action == 'me':
-            result = {'vkontakte_id': str(actor), 'admin': admin, 'registered': bool(rows)}
+            expert = bool(actor_uid and rows('SELECT user_id FROM ExpertProfiles WHERE user_id=$uid;', uid=actor_uid))
+            result = {'user_id':actor_uid, 'vkontakte_id':str(actor),
+                      'name':actor_user['name'] if actor_user else None,
+                      'attendee':'attendee' in actor_roles, 'admin':'admin' in actor_roles, 'expert':expert}
         else:
-            if not admin:
+            if 'admin' not in actor_roles:
                 raise ApiError(403, 'Доступ только для администратора')
+            if action != 'list' and os.environ.get('ADMIN_WRITES_DISABLED', 'false').lower() == 'true':
+                raise ApiError(503, 'Изменения временно приостановлены')
             if action == 'list':
-                results = run('SELECT * FROM Participants ORDER BY vkontakte_id; SELECT * FROM Events ORDER BY id; SELECT * FROM Attendance; SELECT * FROM Hosts;')
-                result = {key: [dict(row) for row in rs.rows] for key, rs in zip(['participants','events','attendance','hosts'], results)}
-                for key in ('participants','attendance','hosts'):
-                    for row in result[key]:
+                result = {}
+                for key, table, order in [('users','Users','id'), ('roles','UserRoles','user_id, role'),
+                                         ('expert_profiles','ExpertProfiles','sort_order, user_id'),
+                                         ('events','Events','id'), ('attendance','AttendanceV2','user_id, event_id'),
+                                         ('hosts','HostsV2','user_id, event_id')]:
+                    result[key] = rows(f'SELECT * FROM {table} ORDER BY {order};')
+                for row in result['users']:
+                    if row['vkontakte_id'] is not None:
                         row['vkontakte_id'] = str(row['vkontakte_id'])
-            elif action in ('saveParticipant', 'deleteParticipant'):
-                pid = int64(body.get('vkontakte_id'))
-                if action == 'deleteParticipant':
-                    if pid == actor:
-                        raise ApiError(400, 'Нельзя удалить собственную учётную запись')
-                    run('DELETE FROM Attendance WHERE vkontakte_id=$pid; DELETE FROM Hosts WHERE vkontakte_id=$pid; DELETE FROM Participants WHERE vkontakte_id=$pid;', pid=pid)
-                else:
-                    role = body.get('admin', False)
-                    if type(role) is not bool or (pid == actor and not role):
-                        raise ApiError(400, 'Нельзя снять свою роль администратора')
-                    run('UPSERT INTO Participants (vkontakte_id, admin, note) VALUES ($pid,$admin,$note);', pid=pid, admin=role, note=text(body.get('note',''), 4000))
-                result = {'ok': True}
+            elif action == 'saveUser':
+                uid = text(body.get('id',new_id),100,True)
+                existing = user(uid) if 'id' in body else None
+                vk = None if body.get('vkontakte_id') is None else int64(body['vkontakte_id'])
+                old_vk = existing['vkontakte_id'] if existing else None
+                name, note = text(body.get('name'),300,True), text(body.get('note',''),4000)
+                if existing and vk is None and 'admin' in roles(uid):
+                    raise ApiError(400, 'Сначала снимите роль администратора перед отключением VK')
+                if uid == actor_uid and vk != actor:
+                    raise ApiError(400, 'Нельзя изменить собственную VK-привязку')
+                if vk is not None:
+                    owners = rows('SELECT user_id FROM VkIdentities WHERE vkontakte_id=$vk;', vk=vk)
+                    if owners and owners[0]['user_id'] != uid:
+                        raise ApiError(409, 'VK ID уже связан с другим пользователем')
+                if old_vk is not None and old_vk != vk:
+                    run('DELETE FROM VkIdentities WHERE vkontakte_id=$vk AND user_id=$uid;', vk=old_vk,uid=uid)
+                run('UPSERT INTO Users (id,vkontakte_id,name,note) VALUES ($uid,$linked_vk,$name,$note);', uid=uid,linked_vk=vk,name=name,note=note)
+                if vk is not None:
+                    run('UPSERT INTO VkIdentities (vkontakte_id,user_id) VALUES ($vk,$uid);',vk=vk,uid=uid)
+                result = {'ok':True,'id':uid}
+            elif action == 'deleteUser':
+                uid = text(body.get('id'),100,True)
+                target = user(uid)
+                if uid == actor_uid:
+                    raise ApiError(400, 'Нельзя удалить собственную учётную запись')
+                protect_admin(uid,roles(uid))
+                for table in ('UserRoles','ExpertProfiles','AttendanceV2','HostsV2','VkIdentities'):
+                    run(f'DELETE FROM {table} WHERE user_id=$uid;',uid=uid)
+                run('DELETE FROM Users WHERE id=$uid;',uid=uid)
+                result = {'ok':True}
+            elif action == 'saveRoles':
+                uid = text(body.get('user_id'),100,True)
+                target = user(uid)
+                requested = body.get('roles')
+                if not isinstance(requested,list) or any(not isinstance(r,str) or r not in ('attendee','admin') for r in requested) or len(set(requested)) != len(requested):
+                    raise ApiError(400, 'Некорректные роли')
+                current = roles(uid)
+                if 'admin' in requested:
+                    target_vk = target['vkontakte_id']
+                    linked = rows('SELECT user_id FROM VkIdentities WHERE vkontakte_id=$vk;',vk=target_vk) if target_vk is not None else []
+                    if not linked or linked[0]['user_id'] != uid:
+                        raise ApiError(409, 'Для администратора требуется подтверждённая VK-привязка')
+                if 'admin' not in requested:
+                    protect_admin(uid,current)
+                run('DELETE FROM UserRoles WHERE user_id=$uid;',uid=uid)
+                for role in requested:
+                    run('UPSERT INTO UserRoles (user_id,role) VALUES ($uid,$role);',uid=uid,role=role)
+                if 'attendee' not in requested:
+                    run('DELETE FROM AttendanceV2 WHERE user_id=$uid;',uid=uid)
+                result = {'ok':True}
+            elif action == 'saveExpertProfile':
+                uid = text(body.get('user_id'),100,True)
+                user(uid)
+                photo = text(body.get('photo'),500,True)
+                url = text(body.get('profile_url'),1000,True)
+                parsed = parse.urlsplit(url)
+                if photo not in allowed_photos() or parsed.scheme != 'https' or not parsed.hostname or parsed.username or parsed.password:
+                    raise ApiError(400, 'Проверьте фотографию и HTTPS-ссылку')
+                order = body.get('sort_order')
+                if type(order) is not int or not 0 <= order <= 9223372036854775807:
+                    raise ApiError(400, 'Некорректный порядок')
+                run('UPSERT INTO ExpertProfiles (user_id,photo,profile_url,professional_title,bio,sort_order) VALUES ($uid,$photo,$profile_url,$professional_title,$bio,$sort_order);',uid=uid,photo=photo,profile_url=url,professional_title=text(body.get('professional_title'),500),bio=text(body.get('bio'),10000),sort_order=order)
+                result = {'ok':True}
+            elif action == 'deleteExpertProfile':
+                uid = text(body.get('user_id'),100,True)
+                if not rows('SELECT user_id FROM ExpertProfiles WHERE user_id=$uid;',uid=uid):
+                    raise ApiError(404, 'Профиль эксперта удалён')
+                if rows('SELECT event_id FROM HostsV2 WHERE user_id=$uid;',uid=uid):
+                    raise ApiError(409, 'Сначала удалите связи эксперта с событиями')
+                run('DELETE FROM ExpertProfiles WHERE user_id=$uid;',uid=uid)
+                result = {'ok':True}
             elif action in ('saveEvent','deleteEvent'):
-                eid = text(body.get('id', new_id), 100, True)
+                eid = text(body.get('id',new_id),100,True)
                 if action == 'deleteEvent':
-                    run('DELETE FROM Attendance WHERE event_id=$eid; DELETE FROM Hosts WHERE event_id=$eid; DELETE FROM Events WHERE id=$eid;', eid=eid)
+                    if not rows('SELECT id FROM Events WHERE id=$eid;',eid=eid):
+                        raise ApiError(404, 'Событие удалено')
+                    for table in ('AttendanceV2','HostsV2'):
+                        run(f'DELETE FROM {table} WHERE event_id=$eid;',eid=eid)
+                    run('DELETE FROM Events WHERE id=$eid;',eid=eid)
                 else:
-                    run('UPSERT INTO Events (id,title,description) VALUES ($eid,$title,$description);', eid=eid, title=text(body.get('title'),300,True), description=text(body.get('description',''),10000))
-                result = {'ok': True}
+                    run('UPSERT INTO Events (id,title,description) VALUES ($eid,$title,$description);',eid=eid,title=text(body.get('title'),300,True),description=text(body.get('description',''),10000))
+                result = {'ok':True,'id':eid}
             elif action in ('attendance','host'):
-                pid, eid = int64(body.get('vkontakte_id')), text(body.get('event_id'),100,True)
+                uid, eid = text(body.get('user_id'),100,True), text(body.get('event_id'),100,True)
                 enabled = body.get('enabled')
                 if type(enabled) is not bool:
                     raise ApiError(400, 'Некорректное состояние')
-                checks = run('SELECT vkontakte_id FROM Participants WHERE vkontakte_id=$pid; SELECT id FROM Events WHERE id=$eid;', pid=pid,eid=eid)
-                if not all(rs.rows for rs in checks):
-                    raise ApiError(404, 'Участник или событие удалены')
-                table = 'Attendance' if action == 'attendance' else 'Hosts'
-                sql = f'UPSERT INTO {table} (vkontakte_id,event_id) VALUES ($pid,$eid);' if enabled else f'DELETE FROM {table} WHERE vkontakte_id=$pid AND event_id=$eid;'
-                run(sql,pid=pid,eid=eid)
+                table = 'AttendanceV2' if action == 'attendance' else 'HostsV2'
+                if enabled:
+                    user(uid)
+                    if not rows('SELECT id FROM Events WHERE id=$eid;',eid=eid):
+                        raise ApiError(404, 'Событие удалено')
+                    eligible = 'attendee' in roles(uid) if action == 'attendance' else bool(rows('SELECT user_id FROM ExpertProfiles WHERE user_id=$uid;',uid=uid))
+                    if not eligible:
+                        raise ApiError(409, 'Пользователь не участник' if action == 'attendance' else 'Необходим профиль эксперта')
+                    run(f'UPSERT INTO {table} (user_id,event_id) VALUES ($uid,$eid);',uid=uid,eid=eid)
+                else:
+                    run(f'DELETE FROM {table} WHERE user_id=$uid AND event_id=$eid;',uid=uid,eid=eid)
                 result = {'ok':True}
             else:
                 raise ApiError(400, 'Неизвестное действие')
         tx.commit()
         return result
     except Exception:
-        tx.rollback()
+        # An aborted YDB transaction can also reject rollback; preserve the original
+        # exception so retry_operation_sync can recognize retryable failures.
+        try:
+            tx.rollback()
+        except Exception:
+            pass
         raise
 
 def handler(event, context):

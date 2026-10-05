@@ -1,16 +1,16 @@
 import content from "./site.json";
 import program from './program.json';
-import { expertsByName } from './experts.js';
+import { expertsById } from './experts.js';
 
-const person = name => {
-  const expert = expertsByName[name];
-  if (!expert) throw new Error(`Unknown programme expert: ${name}`);
+const person = id => {
+  const expert = expertsById[id];
+  if (!expert) throw new Error(`Unknown programme expert: ${id}`);
   return expert;
 };
 
 export const venue = content.venue;
 
-// Programme content lives in program.json; names resolve to shared expert photos/profiles.
+// Programme content lives in program.json; stable expert IDs resolve to shared expert photos/profiles.
 export const sessions = program.map(session => ({
   ...session,
   ...(session.people ? { people: session.people.map(person) } : {}),

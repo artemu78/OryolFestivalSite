@@ -3,11 +3,11 @@ import { useAuth } from "../context/AuthContext";
 import "./ParticipantWelcome.css";
 
 export function ParticipantWelcome() {
-  const { signedIn, registered } = useAuth();
+  const { signedIn, attendee } = useAuth();
 
   return (
     <div role="status">
-      {signedIn && registered && (
+      {signedIn && attendee && (
         <p className="participant-welcome">{content.Header.participantWelcome}</p>
       )}
     </div>

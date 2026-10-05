@@ -38,3 +38,9 @@ variable "https_domain_keys" {
     error_message = "HTTPS domain keys must be latin or cyrillic."
   }
 }
+
+variable "admin_writes_disabled" {
+  description = "Freeze administrative mutations during coordinated identity cutover."
+  type        = bool
+  default     = false
+}

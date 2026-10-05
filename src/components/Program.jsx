@@ -99,7 +99,7 @@ function SessionCard({ item }) {
           {item.people?.map((person) => (
             <a
               className="session-person"
-              key={person.profile}
+              key={person.id}
               href={person.profile}
               target="_blank"
               rel="noreferrer"

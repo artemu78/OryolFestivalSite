@@ -36,19 +36,15 @@ function VkLogin() {
   const {
     roleError,
     admin,
-    setAdmin,
     userInfo,
     signedIn,
     setSignedIn,
-    userId,
-    setUserId,
+    setVkUserId,
     setExpiresIn,
     setRefreshToken,
     setAccessToken,
     setUserInfo,
   } = useAuth();
-  // console.log("VkLogin userInfo:", userInfo);
-  // console.log("VkLogin userId:", userId);
 
   const container = useRef(null);
   const [open, setOpen] = useState(false);
@@ -121,7 +117,7 @@ function VkLogin() {
               if (!active) return;
               const userInfo = await VKID.Auth.userInfo(access_token);
               if (!active) return;
-              setUserId(user_id);
+              setVkUserId(String(user_id));
               setExpiresIn(expires_in);
               setRefreshToken(refresh_token);
               setAccessToken(access_token);
@@ -143,7 +139,7 @@ function VkLogin() {
   }, [
     open,
     signedIn,
-    setUserId,
+    setVkUserId,
     setExpiresIn,
     setRefreshToken,
     setAccessToken,
@@ -190,8 +186,7 @@ function VkLogin() {
           {roleError && <p role="alert">Не удалось проверить права: {roleError}. Войдите повторно.</p>}
           {admin && <a href="#admin" onClick={() => setUserMenuOpen(false)}>{content.Header.admin}</a>}
           <button type="button" ref={logoutButton} onClick={() => {
-            setAdmin(false);
-            setUserId(null);
+            setVkUserId(null);
             setExpiresIn(null);
             setRefreshToken(null);
             setAccessToken(null);

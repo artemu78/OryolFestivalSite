@@ -1,57 +1,255 @@
+"""Stateful policy tests: execute SQL against an isolated relational store.
+
+This checks application semantics and atomic rollback, not YDB's query dialect
+or distributed serializability; those require live YDB integration verification.
+"""
+import io
+import os
+import re
+import sqlite3
 import unittest
-from unittest.mock import Mock, patch
+from types import SimpleNamespace
+from unittest.mock import patch
 import index
 
+
+class Session:
+    def __init__(self):
+        self.db = sqlite3.connect(':memory:')
+        self.db.row_factory = sqlite3.Row
+        self.db.executescript('''
+        CREATE TABLE Users(id TEXT PRIMARY KEY,vkontakte_id INTEGER,name TEXT,note TEXT);
+        CREATE TABLE VkIdentities(vkontakte_id INTEGER PRIMARY KEY,user_id TEXT);
+        CREATE TABLE UserRoles(user_id TEXT,role TEXT,PRIMARY KEY(user_id,role));
+        CREATE TABLE ExpertProfiles(user_id TEXT PRIMARY KEY,photo TEXT,profile_url TEXT,professional_title TEXT,bio TEXT,sort_order INTEGER);
+        CREATE TABLE Events(id TEXT PRIMARY KEY,title TEXT,description TEXT);
+        CREATE TABLE AttendanceV2(user_id TEXT,event_id TEXT,PRIMARY KEY(user_id,event_id));
+        CREATE TABLE HostsV2(user_id TEXT,event_id TEXT,PRIMARY KEY(user_id,event_id));
+        INSERT INTO Users VALUES('admin',123,'Admin','');
+        INSERT INTO VkIdentities VALUES(123,'admin');
+        INSERT INTO UserRoles VALUES('admin','admin');
+        INSERT INTO Users VALUES('other',456,'Other','');
+        INSERT INTO VkIdentities VALUES(456,'other');
+        INSERT INTO Events VALUES('event','Event','');
+        ''')
+        self.tx = None
+
+    def prepare(self, sql):
+        return sql
+
+    def transaction(self, mode):
+        self.tx = Transaction(self.db)
+        return self.tx
+
+
+class Transaction:
+    def __init__(self, db):
+        self.db = db
+        self.writes = 0
+        db.execute('BEGIN')
+
+    def execute(self, sql, params):
+        sql = re.sub(r'DECLARE \$\w+ AS [^;]+;', '', sql)
+        values = {key[1:]:value for key,value in params.items()}
+        results = []
+        for statement in sql.split(';'):
+            statement = statement.strip()
+            if not statement:
+                continue
+            if statement.startswith('UPSERT INTO'):
+                self.writes += 1
+                # SQLite REPLACE implements these full-column primary-key upserts.
+                statement = statement.replace('UPSERT INTO','INSERT OR REPLACE INTO',1)
+            elif statement.startswith('DELETE'):
+                self.writes += 1
+            cursor = self.db.execute(statement, values)
+            results.append(SimpleNamespace(rows=[dict(row) for row in cursor.fetchall()]))
+        return results
+
+    def commit(self):
+        self.db.commit()
+
+    def rollback(self):
+        self.db.rollback()
+
+
 class PolicyTests(unittest.TestCase):
-    def session(self, admin=False):
-        session = Mock()
-        session.prepare.side_effect = lambda sql: sql
-        tx = session.transaction.return_value
-        tx.execute.return_value = [Mock(rows=[Mock(admin=admin)])]
-        return session, tx
+    def setUp(self):
+        self.session = Session()
+        self.addCleanup(self.session.db.close)
+
+    def call(self, action, actor=123, **body):
+        return index.operation(self.session,actor,action,body,'generated-id')
+
+    def denied(self, status, action, **body):
+        with self.assertRaises(index.ApiError) as caught:
+            self.call(action,**body)
+        self.assertEqual(caught.exception.status,status)
+
+    def table(self, table):
+        return [dict(row) for row in self.session.db.execute('SELECT * FROM '+table)]
+
+    def test_unknown_login_does_not_write(self):
+        self.assertEqual(self.call('me',actor=999),dict(user_id=None,vkontakte_id='999',name=None,attendee=False,admin=False,expert=False))
+        self.assertEqual(self.session.tx.writes,0)
+        self.assertEqual(len(self.table('Users')),2)
+        self.denied(403,'list',actor=999)
 
     def test_non_admin_cannot_manage(self):
-        for action in ['list','saveParticipant','deleteParticipant','saveEvent','deleteEvent','attendance','host']:
-            session, tx = self.session()
-            with self.assertRaises(index.ApiError) as caught:
-                index.operation(session,123,action,{},'new')
-            self.assertEqual(caught.exception.status,403)
-            self.assertEqual(tx.execute.call_count,1)
-            tx.rollback.assert_called_once()
-            tx.commit.assert_not_called()
+        for action in ('list','saveUser','deleteUser','saveRoles','saveExpertProfile','deleteExpertProfile','saveEvent','deleteEvent','attendance','host'):
+            self.denied(403,action,actor=456)
+            self.assertEqual(self.session.tx.writes,0)
 
-    def test_self_removal_and_demotion_rejected(self):
-        for action, body in [('deleteParticipant',{'vkontakte_id':'123'}),('saveParticipant',{'vkontakte_id':'123','admin':False})]:
-            session, tx = self.session(True)
-            with self.assertRaises(index.ApiError):
-                index.operation(session,123,action,body,'new')
-            self.assertEqual(tx.execute.call_count,1)
-            tx.commit.assert_not_called()
+    def profile(self, uid='other'):
+        self.call('saveExpertProfile',user_id=uid,photo=next(iter(index.allowed_photos())),profile_url='https://vk.com/example',professional_title='Psychologist',bio='Bio',sort_order=0)
 
-    def test_int64_preserves_large_ids(self):
+    def test_overlapping_roles(self):
+        self.call('saveRoles',user_id='other',roles=['admin','attendee'])
+        self.profile()
+        self.assertEqual(self.call('me',actor=456),dict(user_id='other',vkontakte_id='456',name='Other',attendee=True,admin=True,expert=True))
+        listing = self.call('list')
+        self.assertEqual(listing['users'][0]['vkontakte_id'],'123')
+        self.assertEqual(set(listing),{'users','roles','expert_profiles','events','attendance','hosts'})
+
+    def test_identity_conflict_and_relink(self):
+        self.denied(409,'saveUser',id='other',vkontakte_id='123',name='Other',note='')
+        self.assertEqual(self.table('VkIdentities')[1]['vkontakte_id'],456)
+        self.call('saveUser',id='other',vkontakte_id='789',name='Renamed',note='private')
+        self.assertFalse(self.call('me',actor=456)['attendee'])
+        self.assertIsNone(self.call('me',actor=456)['user_id'])
+        self.assertEqual(self.call('me',actor=789)['name'],'Renamed')
+        self.call('saveUser',id='other',vkontakte_id=None,name='Renamed',note='')
+        self.assertEqual(len(self.table('VkIdentities')),1)
+
+    def test_self_protection(self):
+        self.denied(400,'deleteUser',id='admin')
+        self.denied(400,'saveRoles',user_id='admin',roles=['attendee'])
+        self.denied(400,'saveUser',id='admin',vkontakte_id=None,name='Admin',note='')
+        self.denied(400,'saveUser',id='admin',vkontakte_id='789',name='Admin',note='')
+        self.assertEqual(self.table('UserRoles'),[dict(user_id='admin',role='admin')])
+
+    def test_last_admin_guard(self):
+        # Exercise the range-read guard directly: actor role is observed at auth,
+        # then simulate an inconsistent range containing only the target.
+        original = Transaction.execute
+        def execute(tx,sql,params):
+            if "WHERE role='admin'" in sql:
+                return [SimpleNamespace(rows=[dict(user_id='other')])]
+            return original(tx,sql,params)
+        self.call('saveRoles',user_id='other',roles=['admin'])
+        with patch.object(Transaction,'execute',execute):
+            self.denied(409,'saveRoles',user_id='other',roles=[])
+        self.assertEqual(len(self.table('UserRoles')),2)
+
+    def test_admin_requires_usable_identity(self):
+        self.call('saveUser',id='other',vkontakte_id=None,name='Other',note='')
+        self.denied(409,'saveRoles',user_id='other',roles=['admin'])
+        self.call('saveUser',id='other',vkontakte_id='456',name='Other',note='')
+        self.call('saveRoles',user_id='other',roles=['admin'])
+        self.denied(400,'saveUser',id='other',vkontakte_id=None,name='Other',note='')
+        self.assertEqual(self.call('me',actor=456)['admin'],True)
+
+    def test_truncated_results_are_rejected(self):
+        original = Transaction.execute
+        def execute(tx,sql,params):
+            result = original(tx,sql,params)
+            result[0].truncated = True
+            return result
+        with patch.object(Transaction,'execute',execute):
+            self.denied(503,'list')
+
+    def test_role_removal_cleans_attendance(self):
+        self.denied(409,'attendance',user_id='other',event_id='event',enabled=True)
+        self.call('saveRoles',user_id='other',roles=['attendee'])
+        self.call('attendance',user_id='other',event_id='event',enabled=True)
+        self.call('saveRoles',user_id='other',roles=[])
+        self.assertEqual(self.table('AttendanceV2'),[])
+        self.denied(400,'saveRoles',user_id='other',roles=['admin','admin'])
+        self.denied(400,'saveRoles',user_id='other',roles=['expert'])
+
+    def test_host_and_profile_deletion(self):
+        self.denied(409,'host',user_id='other',event_id='event',enabled=True)
+        self.profile()
+        self.call('host',user_id='other',event_id='event',enabled=True)
+        self.denied(409,'deleteExpertProfile',user_id='other')
+        self.assertEqual(len(self.table('ExpertProfiles')),1)
+        self.call('host',user_id='other',event_id='event',enabled=False)
+        self.call('deleteExpertProfile',user_id='other')
+        self.denied(404,'deleteExpertProfile',user_id='other')
+
+    def test_stale_links_can_be_disabled(self):
+        self.session.db.execute("INSERT INTO HostsV2 VALUES('missing','gone')")
+        self.session.db.commit()
+        self.call('host',user_id='missing',event_id='gone',enabled=False)
+        self.assertEqual(self.table('HostsV2'),[])
+        self.denied(404,'host',user_id='missing',event_id='gone',enabled=True)
+        self.denied(400,'attendance',user_id='other',event_id='event',enabled=1)
+
+    def test_event_and_user_cascades(self):
+        self.profile()
+        self.call('saveRoles',user_id='other',roles=['attendee','admin'])
+        for action in ('host','attendance'):
+            self.call(action,user_id='other',event_id='event',enabled=True)
+        self.call('deleteEvent',id='event')
+        self.assertEqual(self.table('HostsV2'),[])
+        self.assertEqual(self.table('AttendanceV2'),[])
+        self.denied(404,'deleteEvent',id='event')
+        self.call('deleteUser',id='other')
+        for table in ('VkIdentities','UserRoles','ExpertProfiles'):
+            self.assertTrue(all(row.get('user_id') != 'other' for row in self.table(table)))
+        self.denied(404,'deleteUser',id='other')
+
+    def test_profile_validation(self):
+        fields = dict(user_id='other',photo='../secret',profile_url='https://vk.com/example',professional_title='',bio='',sort_order=0)
+        self.denied(400,'saveExpertProfile',**fields)
+        fields.update(photo=next(iter(index.allowed_photos())),profile_url='http://vk.com/example')
+        self.denied(400,'saveExpertProfile',**fields)
+        fields.update(profile_url='https://vk.com/example',sort_order=True)
+        self.denied(400,'saveExpertProfile',**fields)
+
+    def test_maintenance_all_writes(self):
+        with patch.dict(os.environ,{'ADMIN_WRITES_DISABLED':'true'}):
+            self.call('me')
+            self.call('list')
+            for action in ('saveUser','deleteUser','saveRoles','saveExpertProfile','deleteExpertProfile','saveEvent','deleteEvent','attendance','host'):
+                self.denied(503,action)
+                self.assertEqual(self.session.tx.writes,0)
+
+    def test_rollback_after_partial_write(self):
+        original = Transaction.execute
+        def fail(tx,sql,params):
+            if 'UPSERT INTO VkIdentities' in sql:
+                raise RuntimeError('simulated database failure')
+            return original(tx,sql,params)
+        with patch.object(Transaction,'execute',fail), self.assertRaises(RuntimeError):
+            self.call('saveUser',vkontakte_id='777',name='New',note='')
+        self.assertEqual(len(self.table('Users')),2)
+
+    def test_retry_preserves_generated_id(self):
+        seen=[]
+        class RetryPool:
+            def retry_operation_sync(inner, callback):
+                for attempt in range(2):
+                    session = Session()
+                    try:
+                        result=callback(session)
+                        seen.append(result['id'])
+                    finally:
+                        session.db.close()
+                return result
+        with patch.object(index,'vk_identity',return_value=123),patch.object(index,'pool',return_value=RetryPool()):
+            response=index.handler({'httpMethod':'POST','body':'{"action":"saveUser","name":"New","vkontakte_id":null,"note":""}'},None)
+        self.assertEqual(response['statusCode'],200)
+        self.assertEqual(seen[0],seen[1])
+
+    def test_int64_and_vk_token(self):
         self.assertEqual(index.int64('9223372036854775807'),9223372036854775807)
-        for value in ['9223372036854775808',0,True,'0','-1','١٢٣','1.2']:
+        for value in ('9223372036854775808',0,True,'0','-1','١٢٣','1.2'):
             with self.assertRaises(index.ApiError): index.int64(value)
+        with patch.dict(os.environ,{'VK_APP_ID':'54800266'}),patch.object(index.request,'urlopen') as urlopen:
+            urlopen.return_value.__enter__.return_value=io.BytesIO(b'{"user":{"user_id":"10487183"}}')
+            self.assertEqual(index.vk_identity({'x-vk-token':'Bearer token'}),10487183)
+        with self.assertRaises(index.ApiError): index.vk_identity({})
 
-    def test_vk_token_uses_application_header(self):
-        import io
-        import os
-        with patch.dict(os.environ, {'VK_APP_ID':'54800266'}), patch.object(index.request, 'urlopen') as urlopen:
-            urlopen.return_value.__enter__.return_value = io.BytesIO(b'{"user":{"user_id":"10487183"}}')
-            self.assertEqual(index.vk_identity({'x-vk-token':'Bearer test-token'}),10487183)
-            self.assertIn(b'access_token=test-token', urlopen.call_args.args[0].data)
-
-    def test_missing_bearer_rejected(self):
-        with self.assertRaises(index.ApiError) as caught:
-            index.vk_identity({})
-        self.assertEqual(caught.exception.status,401)
-
-    def test_missing_link_target_rolls_back(self):
-        session, tx = self.session(True)
-        tx.execute.side_effect = [[Mock(rows=[Mock(admin=True)])], [Mock(rows=[]),Mock(rows=[{'id':'event'}])]]
-        with self.assertRaises(index.ApiError) as caught:
-            index.operation(session,123,'host',{'vkontakte_id':'456','event_id':'event','enabled':True},'new')
-        self.assertEqual(caught.exception.status,404)
-        tx.commit.assert_not_called()
 
 if __name__ == '__main__': unittest.main()

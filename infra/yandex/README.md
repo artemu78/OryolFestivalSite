@@ -134,14 +134,33 @@ the configured HashiCorp Terraform MCP server and against Yandex docs through Co
 
 ## Admin API and event seed
 
-`admin.tf` adds Participants, Events, Attendance, Hosts and a separate VK-verified
-function. Build with `VITE_ADMIN_API_URL` set to the `admin_api_url` output.
-Register the exact site base URL in the VK ID application's allowed redirects.
-Custom domains require HTTPS and VK application configuration before login works.
-No VK secret belongs in the static site.
+`admin.tf` retains protected legacy tables and deploys the VK-verified function.
+`identity.tf` adds Users, VkIdentities, UserRoles, ExpertProfiles, AttendanceV2 and HostsV2.
+Events IDs remain unchanged. Build with `VITE_ADMIN_API_URL` set to the
+`admin_api_url` output (the current URL is also the application default).
 
-Run `seed-admin.py` with Python and `ydb[yc]==3.33.2`, operator environment variables
-`YDB_ENDPOINT`, `YDB_DATABASE`, and `YC_SERVICE_ACCOUNT_KEY_FILE`.
-Pass `--admin-id NUMERIC_VK_ID` only after the owner provides it. Without that flag,
-only absent seed events are imported. Existing event edits and participant notes
-are preserved. Admin role assignment is an operator task, never a public endpoint.
+See [identity schema](../../docs/identity-schema.md),
+[migration operations](../../docs/identity-migration/operations.md) and
+[public expert export](../../docs/public-expert-export.md).
+
+`admin_writes_disabled=true` deploys maintenance mode: reads remain allowed,
+mutations return 503 after authorization. For legacy cutover, first deploy the new
+API with this flag, wait at least the old function timeout (30 seconds) for existing
+calls to finish, then take the definitive legacy export and migrate. Do not treat
+`--writes-frozen` as a remote switch. Resume writes with a reviewed plan setting
+`admin_writes_disabled=false`, after migration and integrity checks.
+
+Operator scripts require pinned `ydb[yc]==3.33.2`, `YDB_ENDPOINT`,
+`YDB_DATABASE`, and `YC_SERVICE_ACCOUNT_KEY_FILE`. `seed-admin.py --admin-id`
+assigns the new admin role only to an explicitly verified numeric VK identity;
+it preserves names, notes and existing Events. Do not seed before legacy migration.
+
+Register exact HTTPS site base URLs in the VK application's redirect settings.
+No VK secret belongs in the static site. Real VK login must be verified separately
+with an owner session; SQL/API transport checks cannot establish that browser flow.
+
+After expert edits: export live public profiles, validate, build for `/`, review/apply
+Terraform to both buckets, then commit/push for the separate GitHub Pages workflow.
+Never publish bootstrap after admin editing. Preserve legacy tables and private
+rollback artifacts; after writes resume rollback requires freezing/exporting the
+new system and reconciling new changes, not blindly restoring the old snapshot.

@@ -14,7 +14,7 @@ export function Experts() {
       </div>
       <div className="expert-grid">
         {experts.map((expert) => (
-          <article className="expert" key={expert.name}>
+          <article className="expert" key={expert.id}>
             <div className="expert-art">
               <a
                 className="expert-photo-link"
