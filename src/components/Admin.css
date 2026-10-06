@@ -1,14 +1,122 @@
 .admin-page { padding-top: 9rem; padding-bottom: 4rem; }
-.admin-page fieldset { margin: 2rem 0; border: 1px solid #728777; border-radius: 12px; padding: 1.2rem; min-width: 0; }
+
+/* Admin Header & Title */
+.admin-header {
+  margin-bottom: 2rem;
+}
+.admin-header-title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.admin-header-title-row h1 {
+  margin: 0;
+  font-family: "Manrope", "Golos Text", sans-serif;
+  font-weight: 500;
+  letter-spacing: -0.055em;
+  font-size: clamp(2rem, calc(4vw * var(--font-scale)), 3.2rem);
+  color: #203e33;
+}
+.admin-back-link {
+  font-size: calc(12px * var(--font-scale));
+  font-weight: 600;
+  color: #203e33;
+  padding: 8px 16px;
+  border: 1px solid #bfc7b7;
+  border-radius: 30px;
+  background: radial-gradient(
+    ellipse 60% 50% at center,
+    rgba(247, 245, 237, 0.96) 0%,
+    rgba(247, 245, 237, 0.78) 48%,
+    rgba(247, 245, 237, 0) 100%
+  );
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+.admin-back-link:hover {
+  background: #203e33;
+  color: #f7f5ed;
+  border-color: #203e33;
+}
+
+.admin-alert {
+  color: #8c2424;
+  margin: 0.5rem 0;
+  font-weight: 500;
+}
+.admin-status {
+  color: #556c5a;
+  margin: 0.5rem 0;
+}
+
+/* Tabs Navigation - Desktop */
+.admin-nav {
+  margin-top: 1.5rem;
+}
+.admin-tabs {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 2px solid #d4d9ca;
+  padding-bottom: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.admin-tab-btn {
+  appearance: none;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: #556c5a;
+  font-family: inherit;
+  font-size: calc(13px * var(--font-scale));
+  font-weight: 600;
+  padding: 0.8rem 1.4rem;
+  cursor: pointer;
+  border-radius: 8px 8px 0 0;
+  transition: color 0.15s, border-color 0.15s, background-color 0.15s;
+  white-space: nowrap;
+  margin-bottom: -2px;
+}
+.admin-tab-btn:hover {
+  color: #203e33;
+  background-color: rgba(64, 106, 80, 0.06);
+}
+.admin-tab-btn--active {
+  color: #203e33;
+  border-bottom-color: #203e33;
+  background-color: rgba(64, 106, 80, 0.08);
+}
+
+/* Mobile dropdown - Hidden on desktop */
+.admin-mobile-nav {
+  display: none;
+}
+
+/* Tab Panels */
+.admin-tabpanel {
+  min-width: 0;
+}
+.admin-tabpanel[hidden] {
+  display: none !important;
+}
+
+.admin-page fieldset { margin: 1.5rem 0 2rem; border: 1px solid #728777; border-radius: 12px; padding: 1.5rem; min-width: 0; background: #faf8f2; }
+.admin-page legend { font-weight: 600; font-size: 1.15rem; color: #203e33; padding: 0 0.5rem; }
 .admin-page form { display: grid; gap: 1rem; max-width: 640px; }
-.admin-page label { display: block; }
-.admin-page input:not([type=checkbox]), .admin-page textarea { display: block; width: 100%; box-sizing: border-box; font: inherit; padding: .6rem; }
-.admin-page button { font: inherit; padding: .5rem .8rem; cursor: pointer; }
-.admin-page article { padding: 1rem 0; border-top: 1px solid #728777; margin-top: 1rem; }
+.admin-page label { display: block; font-weight: 500; font-size: 0.95rem; color: #203e33; }
+.admin-page input:not([type=checkbox]), .admin-page textarea { display: block; width: 100%; box-sizing: border-box; font: inherit; padding: .6rem; border: 1px solid #728777; border-radius: 6px; background: #fff; margin-top: 0.3rem; }
+.admin-page button { font: inherit; padding: .55rem 1rem; cursor: pointer; border: 1px solid #728777; border-radius: 6px; background: #fff; color: #203e33; font-weight: 500; transition: background 0.15s; }
+.admin-page button:hover { background: #e8eee8; }
+.admin-page article { padding: 1.2rem 0; border-top: 1px solid #d4d9ca; margin-top: 1rem; }
 .admin-relation { display: flex; gap: 1rem; flex-wrap: wrap; margin: .8rem 0; }
 .admin-relation span { flex: 1; min-width: 180px; }
 .admin-page :focus-visible { outline: 3px solid #406a50; outline-offset: 3px; }
-.admin-attendance-scroll { overflow: auto; max-height: 70vh; border: 1px solid #728777; border-radius: 8px; }
+.admin-attendance-scroll { overflow: auto; max-height: 70vh; border: 1px solid #728777; border-radius: 8px; width: 100%; box-sizing: border-box; }
 .admin-attendance { border-collapse: separate; border-spacing: 0; width: 100%; }
 .admin-attendance caption { padding: .8rem; text-align: left; }
 .admin-attendance th, .admin-attendance td { padding: .8rem; border-bottom: 1px solid #728777; border-right: 1px solid #728777; }
@@ -19,7 +127,71 @@
 .admin-attendance td { text-align: center; }
 .admin-attendance input { width: 22px; height: 22px; margin: .4rem; accent-color: #406a50; cursor: pointer; }
 .admin-attendance input:disabled { cursor: wait; }
-@media(max-width:700px) { .admin-page { padding-top: 7rem; } .admin-relation span { flex-basis: 100%; } }
+
+@media(max-width:700px) {
+  .admin-page {
+    padding-top: 6.5rem;
+  }
+  .admin-header-title-row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .admin-header-title-row h1 {
+    font-size: 1.8rem;
+  }
+  .admin-tabs {
+    display: none;
+  }
+  .admin-nav {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    margin-top: 1rem;
+    padding: 0.75rem 0;
+    background: #f7f5ed;
+    border-bottom: 1px solid #dedfd3;
+    box-shadow: 0 4px 12px rgba(32, 62, 51, 0.05);
+  }
+  .admin-mobile-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .admin-mobile-nav-label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #203e33;
+    white-space: nowrap;
+    margin: 0;
+  }
+  .admin-mobile-select {
+    width: 100%;
+    font: inherit;
+    font-size: 1rem;
+    font-weight: 500;
+    padding: 0.65rem 0.9rem;
+    border: 1.5px solid #728777;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #203e33;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  }
+  .admin-mobile-select:focus-visible {
+    outline: 3px solid #406a50;
+    outline-offset: 2px;
+  }
+  .admin-relation span {
+    flex-basis: 100%;
+  }
+  .admin-page fieldset {
+    padding: 1rem;
+    margin: 1.2rem 0;
+  }
+}
+
 .admin-page h1 { font-size: clamp(2rem, calc(5vw * var(--font-scale)), 4rem); overflow-wrap: anywhere; }
 .admin-page h3, .admin-page p { overflow-wrap: anywhere; }
 .admin-page select { width: 100%; font: inherit; padding: .6rem; }

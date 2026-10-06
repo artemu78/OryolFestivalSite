@@ -88,61 +88,191 @@ function AdminSession({ auth }) {
     if (enabled) roles.push(role);
     await mutate('saveRoles', { user_id: u.id, roles });
   }
-  return <main id="main" className="wrap admin-page"><h1>Управление фестивалем</h1><a href="#">На сайт</a>
-    <p role="alert">{error}</p><p role="status">{busy ? 'Сохраняем…' : !data ? 'Загружаем…' : ''}</p>
-    <fieldset disabled={busy || !data}><legend>Посещение событий</legend>
-      <p id="attendance-help">Отметьте фактическое посещение участником события. Изменения сохраняются автоматически. Снимите отметку, чтобы исправить запись.</p>
-      {data && (!data.events.length ? <p>Добавьте события для отметок посещения.</p> : !attendees.length ? <p>Назначьте пользователям роль участника для отметок посещения.</p> :
-        <div className="admin-attendance-scroll" role="region" aria-label="Таблица посещения событий" tabIndex={0}>
-          <table className="admin-attendance" aria-describedby="attendance-help"><caption>Участники по событиям</caption>
-            <thead><tr><th scope="col">Событие</th>{attendees.map(u => <th scope="col" key={u.id}>{u.name}</th>)}</tr></thead>
-            <tbody>{data.events.map(ev => <tr key={ev.id}><th scope="row">{ev.title}</th>{attendees.map(u => <td key={u.id}><input type="checkbox" aria-label={`${u.name} — ${ev.title}`} checked={linked('attendance', u.id, ev.id)} onChange={e => mutate('attendance', { user_id: u.id, event_id: ev.id, enabled: e.target.checked })}/></td>)}</tr>)}</tbody>
-          </table>
-        </div>)}
-    </fieldset>
-    <fieldset disabled={busy || !data}><legend>Пользователи и роли</legend>
-      <form onSubmit={async e => { e.preventDefault(); if (await mutate('saveUser', { ...user, vkontakte_id: user.vkontakte_id || null })) setUser(emptyUser); }}>
-        <label>Имя<input ref={nameInput} required maxLength={300} value={user.name} onChange={e => setUser({ ...user, name: e.target.value })}/></label>
-        <label>VK ID (необязательно)<input inputMode="numeric" pattern="[1-9][0-9]*" disabled={user.id === user_id || (data && user.id && hasRole(user.id, 'admin'))} value={user.vkontakte_id ?? ''} onChange={e => setUser({ ...user, vkontakte_id: e.target.value })}/></label>
-        {user.id && data && hasRole(user.id, 'admin') && <p>Для изменения VK ID сначала снимите роль администратора. Собственный VK ID изменить нельзя.</p>}
-        <label>Приватное примечание<textarea maxLength={4000} value={user.note} onChange={e => setUser({ ...user, note: e.target.value })}/></label>
-        <button>Сохранить пользователя</button>{user.id && <button type="button" onClick={() => setUser(emptyUser)}>Отмена</button>}
-      </form>
-      {data?.users.map(u => <article key={u.id}><h3>{u.name}</h3><p>{u.vkontakte_id ? `VK ${u.vkontakte_id}` : 'VK не связан'}{expert(u.id) ? ' · эксперт' : ''}</p><p>{u.note}</p>
-        <div className="admin-relation"><label><input type="checkbox" checked={hasRole(u.id, 'attendee')} onChange={e => toggleRole(u, 'attendee', e.target.checked)}/> Участник</label>
-          <label><input type="checkbox" checked={hasRole(u.id, 'admin')} disabled={u.id === user_id || !u.vkontakte_id} onChange={e => toggleRole(u, 'admin', e.target.checked)}/> Администратор</label></div>
-        {!u.vkontakte_id && <p>Для назначения администратора свяжите VK ID.</p>}
-        <button onClick={() => { setUser(u); nameInput.current?.focus(); }}>Изменить пользователя</button> <button disabled={u.id === user_id} onClick={() => { if (window.confirm(`Удалить ${u.name}, профиль эксперта и все связи?`)) mutate('deleteUser', { id: u.id }); }}>Удалить пользователя</button>{' '}
-        <button onClick={() => setProfile({ ...(expert(u.id) || emptyProfile), user_id: u.id })}>{expert(u.id) ? 'Изменить профиль эксперта' : 'Создать профиль эксперта'}</button>
-        {expert(u.id) && <><button onClick={() => {
-          if (data.hosts.some(h => h.user_id === u.id)) { setError('Сначала снимите все назначения ведущего у этого эксперта.'); return; }
-          if (window.confirm(`Удалить профиль эксперта ${u.name}?`)) mutate('deleteExpertProfile', { user_id: u.id });
-        }}>Удалить профиль эксперта</button>
-          {data.events.map(ev => <div className="admin-relation" key={ev.id}><span>{ev.title}</span><label><input type="checkbox" checked={linked('hosts', u.id, ev.id)} onChange={e => mutate('host', { user_id: u.id, event_id: ev.id, enabled: e.target.checked })}/> Ведущий</label></div>)}</>}
-      </article>)}
-    </fieldset>
-    {profile && <fieldset disabled={busy || !data}><legend>Профиль эксперта: {data.users.find(u => u.id === profile.user_id)?.name}</legend><p>Изменения появятся на публичном сайте после экспорта, сборки и публикации.</p>
-      <form onSubmit={async e => { e.preventDefault(); if (await mutate('saveExpertProfile', profile)) setProfile(null); }}>
-        <label>Портрет<select ref={portraitSelect} value={profile.photo} onChange={e => setProfile({ ...profile, photo: e.target.value })}>{photos.map(photo => <option key={photo} value={photo}>{photo.split('/').pop()}</option>)}</select></label>
-        <img className="admin-portrait" src={`${import.meta.env.BASE_URL}${profile.photo}`} alt="Предпросмотр портрета"/>
-        <label>Ссылка на профиль (HTTPS)<input required type="url" pattern="https://.*" maxLength={1000} value={profile.profile_url} onChange={e => setProfile({ ...profile, profile_url: e.target.value })}/></label>
-        <label>Профессиональное описание<input maxLength={500} value={profile.professional_title} onChange={e => setProfile({ ...profile, professional_title: e.target.value })}/></label>
-        <label>Биография<textarea maxLength={10000} value={profile.bio} onChange={e => setProfile({ ...profile, bio: e.target.value })}/></label>
-        <label>Порядок отображения<input required type="number" min="0" max={Number.MAX_SAFE_INTEGER} step="1" value={profile.sort_order} onChange={e => setProfile({ ...profile, sort_order: e.target.value === '' ? '' : Number(e.target.value) })}/></label>
-        <button>Сохранить профиль</button><button type="button" onClick={() => setProfile(null)}>Отмена</button>
-      </form>
-    </fieldset>}
-    <fieldset disabled={busy || !data}><legend>События</legend><form onSubmit={async e => { e.preventDefault(); if (await mutate('saveEvent', event)) setEvent(emptyEvent); }}>
-      <label>Название<input required maxLength={300} value={event.title} onChange={e => setEvent({ ...event, title: e.target.value })}/></label>
-      <label>Описание<textarea maxLength={10000} value={event.description} onChange={e => setEvent({ ...event, description: e.target.value })}/></label><button>Сохранить событие</button>{event.id && <button type="button" onClick={() => setEvent(emptyEvent)}>Отмена</button>}
-    </form>{data?.events.map(ev => <article key={ev.id}><h3>{ev.title}</h3><p>{ev.description}</p><button onClick={() => setEvent(ev)}>Изменить</button> <button onClick={() => { if (window.confirm(`Удалить «${ev.title}» и все связи?`)) mutate('deleteEvent', { id: ev.id }); }}>Удалить</button></article>)}</fieldset>
-    <fieldset disabled={busy || !data}><legend>Спонсоры</legend>
-      <div className="admin-sponsors-header">
-        <p>Управление спонсорами и партнёрами фестиваля. Создание и редактирование открывается во всплывающем окне.</p>
-        <button type="button" onClick={() => setSponsorModal({ ...emptySponsor })}>+ Добавить спонсора</button>
+  const [activeTab, setActiveTab] = useState('attendance');
+  const tabListRef = useRef(null);
+
+  const tabs = [
+    { id: 'attendance', label: 'Посещение событий' },
+    { id: 'users', label: 'Пользователи и роли' },
+    { id: 'events', label: 'События' },
+    { id: 'sponsors', label: 'Спонсоры' },
+  ];
+
+  const handleTabKeyDown = (e, index) => {
+    let targetIndex = -1;
+    if (e.key === 'ArrowRight') {
+      targetIndex = (index + 1) % tabs.length;
+    } else if (e.key === 'ArrowLeft') {
+      targetIndex = (index - 1 + tabs.length) % tabs.length;
+    } else if (e.key === 'Home') {
+      targetIndex = 0;
+    } else if (e.key === 'End') {
+      targetIndex = tabs.length - 1;
+    }
+
+    if (targetIndex !== -1) {
+      e.preventDefault();
+      const targetTab = tabs[targetIndex];
+      setActiveTab(targetTab.id);
+      const tabButtons = tabListRef.current?.querySelectorAll('[role="tab"]');
+      if (tabButtons && tabButtons[targetIndex]) {
+        tabButtons[targetIndex].focus();
+      }
+    }
+  };
+
+  return (
+    <main id="main" className="wrap admin-page">
+      <div className="admin-header">
+        <div className="admin-header-title-row">
+          <h1>Управление фестивалем</h1>
+          <a className="admin-back-link" href="#">На сайт</a>
+        </div>
+        {error && <p className="admin-alert" role="alert">{error}</p>}
+        {busy ? <p className="admin-status" role="status">Сохраняем…</p> : !data ? <p className="admin-status" role="status">Загружаем…</p> : null}
       </div>
-      {data && (!data.sponsors?.length ? <p>Спонсоры ещё не добавлены.</p> :
-        <div className="admin-sponsors-grid">
+
+      <nav className="admin-nav" aria-label="Разделы панели управления">
+        {/* Desktop tab list */}
+        <div
+          className="admin-tabs"
+          role="tablist"
+          aria-label="Разделы панели управления"
+          ref={tabListRef}
+        >
+          {tabs.map((tab, idx) => (
+            <button
+              key={tab.id}
+              role="tab"
+              id={`tab-${tab.id}`}
+              aria-selected={activeTab === tab.id}
+              aria-controls={`panel-${tab.id}`}
+              tabIndex={activeTab === tab.id ? 0 : -1}
+              className={`admin-tab-btn${activeTab === tab.id ? ' admin-tab-btn--active' : ''}`}
+              onClick={() => setActiveTab(tab.id)}
+              onKeyDown={(e) => handleTabKeyDown(e, idx)}
+              type="button"
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Mobile dropdown */}
+        <div className="admin-mobile-nav">
+          <label htmlFor="admin-mobile-section-select" className="admin-mobile-nav-label">
+            Раздел:
+          </label>
+          <select
+            id="admin-mobile-section-select"
+            className="admin-mobile-select"
+            value={activeTab}
+            onChange={(e) => setActiveTab(e.target.value)}
+          >
+            {tabs.map((tab) => (
+              <option key={tab.id} value={tab.id}>
+                {tab.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </nav>
+
+      {/* Tab Panels */}
+      <div
+        id="panel-attendance"
+        role="tabpanel"
+        aria-labelledby="tab-attendance"
+        hidden={activeTab !== 'attendance'}
+        className="admin-tabpanel"
+      >
+        <fieldset disabled={busy || !data}>
+          <legend>Посещение событий</legend>
+          <p id="attendance-help">Отметьте фактическое посещение участником события. Изменения сохраняются автоматически. Снимите отметку, чтобы исправить запись.</p>
+          {data && (!data.events.length ? <p>Добавьте события для отметок посещения.</p> : !attendees.length ? <p>Назначьте пользователям роль участника для отметок посещения.</p> :
+            <div className="admin-attendance-scroll" role="region" aria-label="Таблица посещения событий" tabIndex={0}>
+              <table className="admin-attendance" aria-describedby="attendance-help"><caption>Участники по событиям</caption>
+                <thead><tr><th scope="col">Событие</th>{attendees.map(u => <th scope="col" key={u.id}>{u.name}</th>)}</tr></thead>
+                <tbody>{data.events.map(ev => <tr key={ev.id}><th scope="row">{ev.title}</th>{attendees.map(u => <td key={u.id}><input type="checkbox" aria-label={`${u.name} — ${ev.title}`} checked={linked('attendance', u.id, ev.id)} onChange={e => mutate('attendance', { user_id: u.id, event_id: ev.id, enabled: e.target.checked })}/></td>)}</tr>)}</tbody>
+              </table>
+            </div>)}
+        </fieldset>
+      </div>
+
+      <div
+        id="panel-users"
+        role="tabpanel"
+        aria-labelledby="tab-users"
+        hidden={activeTab !== 'users'}
+        className="admin-tabpanel"
+      >
+        <fieldset disabled={busy || !data}>
+          <legend>Пользователи и роли</legend>
+          <form onSubmit={async e => { e.preventDefault(); if (await mutate('saveUser', { ...user, vkontakte_id: user.vkontakte_id || null })) setUser(emptyUser); }}>
+            <label>Имя<input ref={nameInput} required maxLength={300} value={user.name} onChange={e => setUser({ ...user, name: e.target.value })}/></label>
+            <label>VK ID (необязательно)<input inputMode="numeric" pattern="[1-9][0-9]*" disabled={user.id === user_id || (data && user.id && hasRole(user.id, 'admin'))} value={user.vkontakte_id ?? ''} onChange={e => setUser({ ...user, vkontakte_id: e.target.value })}/></label>
+            {user.id && data && hasRole(user.id, 'admin') && <p>Для изменения VK ID сначала снимите роль администратора. Собственный VK ID изменить нельзя.</p>}
+            <label>Приватное примечание<textarea maxLength={4000} value={user.note} onChange={e => setUser({ ...user, note: e.target.value })}/></label>
+            <button>Сохранить пользователя</button>{user.id && <button type="button" onClick={() => setUser(emptyUser)}>Отмена</button>}
+          </form>
+          {data?.users.map(u => <article key={u.id}><h3>{u.name}</h3><p>{u.vkontakte_id ? `VK ${u.vkontakte_id}` : 'VK не связан'}{expert(u.id) ? ' · эксперт' : ''}</p><p>{u.note}</p>
+            <div className="admin-relation"><label><input type="checkbox" checked={hasRole(u.id, 'attendee')} onChange={e => toggleRole(u, 'attendee', e.target.checked)}/> Участник</label>
+              <label><input type="checkbox" checked={hasRole(u.id, 'admin')} disabled={u.id === user_id || !u.vkontakte_id} onChange={e => toggleRole(u, 'admin', e.target.checked)}/> Администратор</label></div>
+            {!u.vkontakte_id && <p>Для назначения администратора свяжите VK ID.</p>}
+            <button onClick={() => { setUser(u); nameInput.current?.focus(); }}>Изменить пользователя</button> <button disabled={u.id === user_id} onClick={() => { if (window.confirm(`Удалить ${u.name}, профиль эксперта и все связи?`)) mutate('deleteUser', { id: u.id }); }}>Удалить пользователя</button>{' '}
+            <button onClick={() => setProfile({ ...(expert(u.id) || emptyProfile), user_id: u.id })}>{expert(u.id) ? 'Изменить профиль эксперта' : 'Создать профиль эксперта'}</button>
+            {expert(u.id) && <><button onClick={() => {
+              if (data.hosts.some(h => h.user_id === u.id)) { setError('Сначала снимите все назначения ведущего у этого эксперта.'); return; }
+              if (window.confirm(`Удалить профиль эксперта ${u.name}?`)) mutate('deleteExpertProfile', { user_id: u.id });
+            }}>Удалить профиль эксперта</button>
+              {data.events.map(ev => <div className="admin-relation" key={ev.id}><span>{ev.title}</span><label><input type="checkbox" checked={linked('hosts', u.id, ev.id)} onChange={e => mutate('host', { user_id: u.id, event_id: ev.id, enabled: e.target.checked })}/> Ведущий</label></div>)}</>}
+          </article>)}
+        </fieldset>
+        {profile && <fieldset disabled={busy || !data}><legend>Профиль эксперта: {data.users.find(u => u.id === profile.user_id)?.name}</legend><p>Изменения появятся на публичном сайте после экспорта, сборки и публикации.</p>
+          <form onSubmit={async e => { e.preventDefault(); if (await mutate('saveExpertProfile', profile)) setProfile(null); }}>
+            <label>Портрет<select ref={portraitSelect} value={profile.photo} onChange={e => setProfile({ ...profile, photo: e.target.value })}>{photos.map(photo => <option key={photo} value={photo}>{photo.split('/').pop()}</option>)}</select></label>
+            <img className="admin-portrait" src={`${import.meta.env.BASE_URL}${profile.photo}`} alt="Предпросмотр портрета"/>
+            <label>Ссылка на профиль (HTTPS)<input required type="url" pattern="https://.*" maxLength={1000} value={profile.profile_url} onChange={e => setProfile({ ...profile, profile_url: e.target.value })}/></label>
+            <label>Профессиональное описание<input maxLength={500} value={profile.professional_title} onChange={e => setProfile({ ...profile, professional_title: e.target.value })}/></label>
+            <label>Биография<textarea maxLength={10000} value={profile.bio} onChange={e => setProfile({ ...profile, bio: e.target.value })}/></label>
+            <label>Порядок отображения<input required type="number" min="0" max={Number.MAX_SAFE_INTEGER} step="1" value={profile.sort_order} onChange={e => setProfile({ ...profile, sort_order: e.target.value === '' ? '' : Number(e.target.value) })}/></label>
+            <button>Сохранить профиль</button><button type="button" onClick={() => setProfile(null)}>Отмена</button>
+          </form>
+        </fieldset>}
+      </div>
+
+      <div
+        id="panel-events"
+        role="tabpanel"
+        aria-labelledby="tab-events"
+        hidden={activeTab !== 'events'}
+        className="admin-tabpanel"
+      >
+        <fieldset disabled={busy || !data}>
+          <legend>События</legend>
+          <form onSubmit={async e => { e.preventDefault(); if (await mutate('saveEvent', event)) setEvent(emptyEvent); }}>
+            <label>Название<input required maxLength={300} value={event.title} onChange={e => setEvent({ ...event, title: e.target.value })}/></label>
+            <label>Описание<textarea maxLength={10000} value={event.description} onChange={e => setEvent({ ...event, description: e.target.value })}/></label><button>Сохранить событие</button>{event.id && <button type="button" onClick={() => setEvent(emptyEvent)}>Отмена</button>}
+          </form>
+          {data?.events.map(ev => <article key={ev.id}><h3>{ev.title}</h3><p>{ev.description}</p><button onClick={() => setEvent(ev)}>Изменить</button> <button onClick={() => { if (window.confirm(`Удалить «${ev.title}» и все связи?`)) mutate('deleteEvent', { id: ev.id }); }}>Удалить</button></article>)}
+        </fieldset>
+      </div>
+
+      <div
+        id="panel-sponsors"
+        role="tabpanel"
+        aria-labelledby="tab-sponsors"
+        hidden={activeTab !== 'sponsors'}
+        className="admin-tabpanel"
+      >
+        <fieldset disabled={busy || !data}>
+          <legend>Спонсоры</legend>
+          <div className="admin-sponsors-header">
+            <p>Управление спонсорами и партнёрами фестиваля. Создание и редактирование открывается во всплывающем окне.</p>
+            <button type="button" onClick={() => setSponsorModal({ ...emptySponsor })}>+ Добавить спонсора</button>
+          </div>
+          {data && (!data.sponsors?.length ? <p>Спонсоры ещё не добавлены.</p> :
+            <div className="admin-sponsors-grid">
           {data.sponsors.map(s => {
             const preview = imageUrl(s.image);
             return (
@@ -186,7 +316,8 @@ function AdminSession({ auth }) {
             );
           })}
         </div>)}
-    </fieldset>
+        </fieldset>
+      </div>
     {sponsorModal && (
       <div className="admin-modal-backdrop" role="presentation" onClick={() => setSponsorModal(null)}>
         <div
@@ -288,5 +419,6 @@ function AdminSession({ auth }) {
         </div>
       </div>
     )}
-  </main>;
+    </main>
+  );
 }
