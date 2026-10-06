@@ -11,3 +11,4 @@ export { Experts } from "./Experts";
 export { Videos, LiveVoices } from "./Videos";
 export { Venue, Location } from "./Venue";
 export { Closing } from "./Closing";
+export { Sponsors } from "./Sponsors";

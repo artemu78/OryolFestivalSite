@@ -7,6 +7,7 @@ import { Program } from "./Program";
 import { Experts } from "./Experts";
 import { Videos } from "./Videos";
 import { Venue } from "./Venue";
+import { Sponsors } from "./Sponsors";
 import { Closing } from "./Closing";
 
 const defaultCommunity = content.links.community;
@@ -21,6 +22,7 @@ export function Main({ community = defaultCommunity }) {
       <Experts />
       <Videos community={community} />
       <Venue />
+      <Sponsors />
       <Closing />
     </main>
   );

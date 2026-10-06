@@ -111,7 +111,8 @@
     "about": "О фестивале",
     "program": "Программа",
     "experts": "Эксперты",
-    "social": "Мы ВКонтакте ↗"
+    "social": "Мы ВКонтакте ↗",
+    "sponsors": "Спонсоры"
   },
   "venue": {
     "name": "Коворкинг Freedom",
@@ -125,5 +126,10 @@
   },
   "links": {
     "community": "https://vk.ru/club241058655"
+  },
+  "Sponsors": {
+    "label": "06 / СПОНСОРЫ",
+    "title": "Спонсоры",
+    "description": "Спасибо за поддержку фестиваля."
   }
 }

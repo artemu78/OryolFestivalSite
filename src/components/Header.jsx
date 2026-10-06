@@ -243,6 +243,7 @@ export function Header({ community = defaultCommunity }) {
           [content.Header.about, "#about"],
           [content.Header.program, "#program"],
           [content.Header.experts, "#experts"],
+          [content.Header.sponsors, "#sponsors"],
         ].map(([label, link]) => (
           <a key={link} href={link} onClick={() => setMenuOpen(false)}>
             {label}
