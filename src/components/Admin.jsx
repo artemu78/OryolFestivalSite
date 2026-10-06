@@ -37,6 +37,7 @@ export function Admin() {
 function AdminSession({ auth }) {
   const { access_token, sessionRevision, isCurrentSession, user_id } = auth;
   const [data, setData] = useState(null);
+  const [hostUserIds, setHostUserIds] = useState([]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [user, setUser] = useState(emptyUser);
@@ -59,11 +60,16 @@ function AdminSession({ auth }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [sponsorModal]);
   const current = () => alive.current && isCurrentSession(access_token, sessionRevision);
+  function receiveData(result) {
+    setData(result);
+    // Keep a column available after its last assignment is cleared in this session.
+    setHostUserIds(ids => [...new Set([...ids, ...result.hosts.map(host => host.user_id)])]);
+  }
   useEffect(() => {
     alive.current = true;
     let active = true;
     adminRequest(access_token, 'adminList').then(result => {
-      if (active && isCurrentSession(access_token, sessionRevision)) setData(result);
+      if (active && isCurrentSession(access_token, sessionRevision)) receiveData(result);
     }).catch(err => { if (active && isCurrentSession(access_token, sessionRevision)) setError(err.message); });
     return () => { active = false; alive.current = false; };
   }, [access_token, sessionRevision, isCurrentSession]);
@@ -75,13 +81,14 @@ function AdminSession({ auth }) {
       if (!current()) return false;
       const result = await adminRequest(access_token, 'adminList');
       if (!current()) return false;
-      setData(result); return true;
+      receiveData(result); return true;
     } catch (err) { if (current()) setError(err.message); return false; }
     finally { if (current()) { operation.current = false; setBusy(false); } }
   }
   const hasRole = (id, role) => data.roles.some(row => row.user_id === id && row.role === role);
   const linked = (type, id, eid) => data[type].some(row => row.user_id === id && row.event_id === eid);
   const attendees = data?.users.filter(u => hasRole(u.id, 'attendee')) ?? [];
+  const hosts = data?.users.filter(u => hostUserIds.includes(u.id)) ?? [];
   const expert = id => data.expert_profiles.find(p => p.user_id === id);
   async function toggleRole(u, role, enabled) {
     if (!enabled && !window.confirm(`Снять роль «${role === 'admin' ? 'Администратор' : 'Участник'}» у ${u.name}?${role === 'attendee' ? ' Отметки посещения будут удалены.' : ''}`)) return;
@@ -94,6 +101,7 @@ function AdminSession({ auth }) {
 
   const tabs = [
     { id: 'attendance', label: 'Посещение событий' },
+    { id: 'hosts', label: 'Ведущие' },
     { id: 'users', label: 'Пользователи и роли' },
     { id: 'events', label: 'События' },
     { id: 'sponsors', label: 'Спонсоры' },
@@ -195,6 +203,41 @@ function AdminSession({ auth }) {
               <table className="admin-attendance" aria-describedby="attendance-help"><caption>Участники по событиям</caption>
                 <thead><tr><th scope="col">Событие</th>{attendees.map(u => <th scope="col" key={u.id}>{u.name}</th>)}</tr></thead>
                 <tbody>{data.events.map(ev => <tr key={ev.id}><th scope="row">{ev.title}</th>{attendees.map(u => <td key={u.id}><input type="checkbox" aria-label={`${u.name} — ${ev.title}`} checked={linked('attendance', u.id, ev.id)} onChange={e => mutate('attendance', { user_id: u.id, event_id: ev.id, enabled: e.target.checked })}/></td>)}</tr>)}</tbody>
+              </table>
+            </div>)}
+        </fieldset>
+      </div>
+
+      <div
+        id="panel-hosts"
+        role="tabpanel"
+        aria-labelledby="tab-hosts"
+        hidden={activeTab !== 'hosts'}
+        className="admin-tabpanel"
+      >
+        <fieldset disabled={busy || !data}>
+          <legend>Ведущие</legend>
+          <p id="hosts-help">Отметьте события, которые ведёт каждый ведущий. Изменения сохраняются автоматически. Снимите отметку, чтобы отменить назначение.</p>
+          {data && (!data.events.length ? <p>Добавьте события для назначения ведущих.</p> : !hosts.length ? <p>Ведущие ещё не назначены. Первое назначение можно добавить в разделе «Пользователи и роли» у пользователя с профилем эксперта.</p> :
+            <div className="admin-attendance-scroll" role="region" aria-label="Таблица ведущих событий" tabIndex={0}>
+              <table className="admin-attendance" aria-describedby="hosts-help">
+                <caption>Ведущие по событиям</caption>
+                <thead><tr><th scope="col">Событие</th>{hosts.map(u => <th scope="col" key={u.id}>{u.name}</th>)}</tr></thead>
+                <tbody>{data.events.map(ev => (
+                  <tr key={ev.id}>
+                    <th scope="row">{ev.title}</th>
+                    {hosts.map(u => (
+                      <td key={u.id}>
+                        <input
+                          type="checkbox"
+                          aria-label={`${u.name} — ${ev.title}`}
+                          checked={linked('hosts', u.id, ev.id)}
+                          onChange={e => mutate('host', { user_id: u.id, event_id: ev.id, enabled: e.target.checked })}
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                ))}</tbody>
               </table>
             </div>)}
         </fieldset>
