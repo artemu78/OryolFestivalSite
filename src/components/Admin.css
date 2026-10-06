@@ -24,3 +24,175 @@
 .admin-page h3, .admin-page p { overflow-wrap: anywhere; }
 .admin-page select { width: 100%; font: inherit; padding: .6rem; }
 .admin-page .admin-portrait { width: 120px; height: 150px; object-fit: cover; border-radius: 8px; }
+
+/* Sponsors Section */
+.admin-sponsors-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.admin-sponsors-header p {
+  margin: 0;
+  flex: 1;
+  min-width: 250px;
+}
+.admin-sponsors-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.2rem;
+}
+.admin-sponsor-card {
+  border: 1px solid #728777;
+  border-radius: 8px;
+  padding: 1rem;
+  background: #f7f5ef;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 0 !important;
+}
+.admin-sponsor-thumb {
+  width: 100%;
+  height: 120px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 6px;
+  border: 1px solid #c8d1ca;
+}
+.admin-sponsor-thumb--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #728777;
+  font-size: 0.9rem;
+}
+.admin-sponsor-card h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #173024;
+}
+.admin-sponsor-card-meta {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #406a50;
+  word-break: break-all;
+}
+.admin-sponsor-card-meta code {
+  font-size: 0.8rem;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+}
+.admin-sponsor-card-actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: auto;
+  padding-top: 0.6rem;
+  flex-wrap: wrap;
+}
+.admin-badge {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+.admin-badge--visible {
+  background: #d4ebd8;
+  color: #1b4d24;
+}
+.admin-badge--hidden {
+  background: #f5d6d8;
+  color: #721c24;
+}
+.admin-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+.admin-checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #406a50;
+  cursor: pointer;
+  margin: 0;
+}
+
+/* Modal Popup */
+.admin-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.2rem;
+  z-index: 1000;
+  overflow-y: auto;
+}
+.admin-modal {
+  background: #f7f5ef;
+  border: 1px solid #728777;
+  border-radius: 12px;
+  padding: 1.5rem;
+  max-width: 580px;
+  width: 100%;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.admin-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.2rem;
+  border-bottom: 1px solid #728777;
+  padding-bottom: 0.6rem;
+}
+.admin-modal-header h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  color: #173024;
+}
+.admin-modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  padding: 0.2rem 0.5rem;
+  cursor: pointer;
+  color: #173024;
+  border-radius: 4px;
+}
+.admin-modal-close:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+.admin-modal form {
+  max-width: 100%;
+}
+.admin-modal-actions {
+  display: flex;
+  gap: 0.8rem;
+  margin-top: 0.6rem;
+  flex-wrap: wrap;
+}
+.admin-sponsor-preview {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #fff;
+  border: 1px solid #728777;
+  border-radius: 8px;
+  padding: 0.6rem;
+  min-height: 100px;
+}
+.admin-sponsor-preview img {
+  max-height: 120px;
+  max-width: 100%;
+  object-fit: contain;
+}

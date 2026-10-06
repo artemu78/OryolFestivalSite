@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { adminApiUrl, adminRequest } from '../admin-api';
 import photos from '../../infra/yandex/admin/allowed-photos.json';
+import logos from '../logos.json';
+import { imageUrl } from './Sponsors';
 import './Admin.css';
 
 export function AdminAccess() {
@@ -23,6 +25,7 @@ export function AdminAccess() {
 const emptyUser = { vkontakte_id: '', name: '', note: '' };
 const emptyEvent = { title: '', description: '' };
 const emptyProfile = { photo: photos[0], profile_url: '', professional_title: '', bio: '', sort_order: 0 };
+const emptySponsor = { name: '', image: logos[0] || 'logos/freedom.jpg', link: '', display: true };
 
 export function Admin() {
   const auth = useAuth();
@@ -38,11 +41,22 @@ function AdminSession({ auth }) {
   const [user, setUser] = useState(emptyUser);
   const [event, setEvent] = useState(emptyEvent);
   const [profile, setProfile] = useState(null);
+  const [sponsorModal, setSponsorModal] = useState(null);
   const alive = useRef(true);
   const operation = useRef(false);
   const nameInput = useRef(null);
   const portraitSelect = useRef(null);
+  const sponsorNameInput = useRef(null);
   useEffect(() => { if (profile) portraitSelect.current?.focus(); }, [profile?.user_id]);
+  useEffect(() => {
+    if (!sponsorModal) return;
+    sponsorNameInput.current?.focus();
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setSponsorModal(null);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [sponsorModal]);
   const current = () => alive.current && isCurrentSession(access_token, sessionRevision);
   useEffect(() => {
     alive.current = true;
@@ -122,5 +136,157 @@ function AdminSession({ auth }) {
       <label>Название<input required maxLength={300} value={event.title} onChange={e => setEvent({ ...event, title: e.target.value })}/></label>
       <label>Описание<textarea maxLength={10000} value={event.description} onChange={e => setEvent({ ...event, description: e.target.value })}/></label><button>Сохранить событие</button>{event.id && <button type="button" onClick={() => setEvent(emptyEvent)}>Отмена</button>}
     </form>{data?.events.map(ev => <article key={ev.id}><h3>{ev.title}</h3><p>{ev.description}</p><button onClick={() => setEvent(ev)}>Изменить</button> <button onClick={() => { if (window.confirm(`Удалить «${ev.title}» и все связи?`)) mutate('deleteEvent', { id: ev.id }); }}>Удалить</button></article>)}</fieldset>
+    <fieldset disabled={busy || !data}><legend>Спонсоры</legend>
+      <div className="admin-sponsors-header">
+        <p>Управление спонсорами и партнёрами фестиваля. Создание и редактирование открывается во всплывающем окне.</p>
+        <button type="button" onClick={() => setSponsorModal({ ...emptySponsor })}>+ Добавить спонсора</button>
+      </div>
+      {data && (!data.sponsors?.length ? <p>Спонсоры ещё не добавлены.</p> :
+        <div className="admin-sponsors-grid">
+          {data.sponsors.map(s => {
+            const preview = imageUrl(s.image);
+            return (
+              <article className="admin-sponsor-card" key={s.id}>
+                {preview ? (
+                  <img
+                    className={`admin-sponsor-thumb${s.image === 'logos/braf.jpg' ? ' sponsor-logo--screenshot' : ''}`}
+                    src={preview}
+                    alt={s.name?.trim() || 'Логотип спонсора'}
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="admin-sponsor-thumb admin-sponsor-thumb--empty">Нет изображения</div>
+                )}
+                <h4>{s.name?.trim() || <em>Без названия</em>}</h4>
+                <p className="admin-sponsor-card-meta"><code>{s.image}</code></p>
+                {s.link && (
+                  <p className="admin-sponsor-card-meta">
+                    <a href={s.link} target="_blank" rel="noreferrer">{s.link}</a>
+                  </p>
+                )}
+                <div className="admin-relation">
+                  <label className="admin-checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(s.display)}
+                      onChange={e => mutate('saveSponsor', { ...s, display: e.target.checked })}
+                    />
+                    <span className={`admin-badge ${s.display ? 'admin-badge--visible' : 'admin-badge--hidden'}`}>
+                      {s.display ? 'Отображается' : 'Скрыт'}
+                    </span>
+                  </label>
+                </div>
+                <div className="admin-sponsor-card-actions">
+                  <button type="button" onClick={() => setSponsorModal({ ...s })}>Изменить</button>
+                  <button type="button" onClick={() => {
+                    if (window.confirm(`Удалить спонсора «${s.name || s.image}»?`)) mutate('deleteSponsor', { id: s.id });
+                  }}>Удалить</button>
+                </div>
+              </article>
+            );
+          })}
+        </div>)}
+    </fieldset>
+    {sponsorModal && (
+      <div className="admin-modal-backdrop" role="presentation" onClick={() => setSponsorModal(null)}>
+        <div
+          className="admin-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="sponsor-modal-title"
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="admin-modal-header">
+            <h3 id="sponsor-modal-title">{sponsorModal.id ? 'Редактировать спонсора' : 'Новый спонсор'}</h3>
+            <button
+              type="button"
+              className="admin-modal-close"
+              onClick={() => setSponsorModal(null)}
+              aria-label="Закрыть"
+            >
+              ✕
+            </button>
+          </div>
+          <form onSubmit={async e => {
+            e.preventDefault();
+            const payload = {
+              ...sponsorModal,
+              name: sponsorModal.name?.trim() || '',
+              image: sponsorModal.image?.trim() || '',
+              link: sponsorModal.link?.trim() || '',
+              display: Boolean(sponsorModal.display),
+            };
+            if (await mutate('saveSponsor', payload)) setSponsorModal(null);
+          }}>
+            <label>Название
+              <input
+                ref={sponsorNameInput}
+                maxLength={300}
+                value={sponsorModal.name ?? ''}
+                onChange={e => setSponsorModal({ ...sponsorModal, name: e.target.value })}
+                placeholder="Например: Freedom"
+              />
+            </label>
+
+            <label>Выбрать из загруженных логотипов
+              <select
+                value={logos.includes(sponsorModal.image) ? sponsorModal.image : ''}
+                onChange={e => {
+                  if (e.target.value) setSponsorModal({ ...sponsorModal, image: e.target.value });
+                }}
+              >
+                <option value="">-- Выберите файл логотипа --</option>
+                {logos.map(logo => (
+                  <option key={logo} value={logo}>{logo.replace('logos/', '')}</option>
+                ))}
+              </select>
+            </label>
+
+            <label>Путь к файлу или URL изображения
+              <input
+                required
+                maxLength={1000}
+                value={sponsorModal.image ?? ''}
+                onChange={e => setSponsorModal({ ...sponsorModal, image: e.target.value })}
+                placeholder="logos/freedom.jpg или https://example.com/logo.png"
+              />
+            </label>
+
+            {sponsorModal.image && (
+              <div className="admin-sponsor-preview">
+                <img
+                  src={imageUrl(sponsorModal.image) || sponsorModal.image}
+                  alt="Предпросмотр логотипа"
+                />
+              </div>
+            )}
+
+            <label>Ссылка (URL сайта или соцсети)
+              <input
+                type="url"
+                maxLength={1000}
+                value={sponsorModal.link ?? ''}
+                onChange={e => setSponsorModal({ ...sponsorModal, link: e.target.value })}
+                placeholder="https://example.com"
+              />
+            </label>
+
+            <label className="admin-checkbox-label">
+              <input
+                type="checkbox"
+                checked={Boolean(sponsorModal.display)}
+                onChange={e => setSponsorModal({ ...sponsorModal, display: e.target.checked })}
+              />
+              Показывать на сайте (display)
+            </label>
+
+            <div className="admin-modal-actions">
+              <button>{sponsorModal.id ? 'Сохранить изменения' : 'Создать спонсора'}</button>
+              <button type="button" onClick={() => setSponsorModal(null)}>Отмена</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )}
   </main>;
 }

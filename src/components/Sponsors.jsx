@@ -2,7 +2,7 @@ import React from "react";
 import content from "../site.json";
 import { useData } from "../context/DataContext";
 
-function webUrl(value) {
+export function webUrl(value) {
   if (typeof value !== "string" || !value.trim()) return null;
   try {
     const url = new URL(value.trim());
@@ -12,7 +12,7 @@ function webUrl(value) {
   }
 }
 
-function imageUrl(value) {
+export function imageUrl(value) {
   const remote = webUrl(value);
   if (remote) return remote;
   if (typeof value !== "string" || !/^logos\/[\w.-]+\.(?:png|jpe?g|webp|svg)$/i.test(value)) return null;

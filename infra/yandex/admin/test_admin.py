@@ -7,9 +7,18 @@ import io
 import os
 import re
 import sqlite3
+import sys
 import unittest
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
+
+try:
+    import ydb
+    import ydb.iam
+except ImportError:
+    sys.modules['ydb'] = MagicMock()
+    sys.modules['ydb.iam'] = MagicMock()
+
 import index
 
 
@@ -115,12 +124,12 @@ class PolicyTests(unittest.TestCase):
         listing = self.call('list',actor=None)
         self.assertEqual(set(listing),{'users','roles','expert_profiles','events','attendance','hosts','sponsors'})
         self.denied(401,'me',actor=None)
-        for action in ('saveUser','deleteUser','saveRoles','saveExpertProfile','deleteExpertProfile','saveEvent','deleteEvent','attendance','host'):
+        for action in ('saveUser','deleteUser','saveRoles','saveExpertProfile','deleteExpertProfile','saveEvent','deleteEvent','saveSponsor','deleteSponsor','attendance','host'):
             self.denied(401,action,actor=None)
             self.assertEqual(self.session.tx.writes,0)
 
     def test_non_admin_cannot_manage(self):
-        for action in ('saveUser','deleteUser','saveRoles','saveExpertProfile','deleteExpertProfile','saveEvent','deleteEvent','attendance','host'):
+        for action in ('saveUser','deleteUser','saveRoles','saveExpertProfile','deleteExpertProfile','saveEvent','deleteEvent','saveSponsor','deleteSponsor','attendance','host'):
             self.denied(403,action,actor=456)
             self.assertEqual(self.session.tx.writes,0)
 
@@ -235,9 +244,57 @@ class PolicyTests(unittest.TestCase):
         with patch.dict(os.environ,{'ADMIN_WRITES_DISABLED':'true'}):
             self.call('me')
             self.call('list')
-            for action in ('saveUser','deleteUser','saveRoles','saveExpertProfile','deleteExpertProfile','saveEvent','deleteEvent','attendance','host'):
+            for action in ('saveUser','deleteUser','saveRoles','saveExpertProfile','deleteExpertProfile','saveEvent','deleteEvent','saveSponsor','deleteSponsor','attendance','host'):
                 self.denied(503,action)
                 self.assertEqual(self.session.tx.writes,0)
+
+    def test_admin_list_includes_all_sponsors_and_manages_them(self):
+        self.session.db.executescript('''
+        INSERT INTO Sponsors VALUES('s1','Sponsor 1','logos/anicha.jpg','https://example.com',true);
+        INSERT INTO Sponsors VALUES('s2','Sponsor 2','logos/braf.jpg','',false);
+        ''')
+        # Non-admin sees only visible sponsor s1
+        public_list = self.call('list', actor=None)
+        self.assertEqual(len(public_list['sponsors']), 1)
+        self.assertEqual(public_list['sponsors'][0]['id'], 's1')
+
+        # Admin sees both sponsors s1 and s2
+        admin_list = self.call('list', actor=123)
+        self.assertEqual(len(admin_list['sponsors']), 2)
+
+        # Admin creates new sponsor
+        create_res = self.call('saveSponsor', actor=123, name='New Sponsor', image='logos/freedom.jpg', link='https://freedom.ru', display=True)
+        self.assertTrue(create_res['ok'])
+        new_sid = create_res['id']
+        rows = self.table('Sponsors')
+        self.assertEqual(len(rows), 3)
+
+        # Admin updates existing sponsor (replace pic, url, display)
+        update_res = self.call('saveSponsor', actor=123, id=new_sid, name='Updated Freedom', image='logos/happy.jpg', link='https://happy.ru', display=False)
+        self.assertTrue(update_res['ok'])
+        updated = [r for r in self.table('Sponsors') if r['id'] == new_sid][0]
+        self.assertEqual(updated['name'], 'Updated Freedom')
+        self.assertEqual(updated['image'], 'logos/happy.jpg')
+        self.assertEqual(updated['link'], 'https://happy.ru')
+        self.assertFalse(bool(updated['display']))
+
+        # Admin deletes sponsor
+        delete_res = self.call('deleteSponsor', actor=123, id=new_sid)
+        self.assertTrue(delete_res['ok'])
+        self.assertEqual(len(self.table('Sponsors')), 2)
+        self.denied(404, 'deleteSponsor', actor=123, id=new_sid)
+
+    def test_sponsor_validation(self):
+        # Invalid image path
+        self.denied(400, 'saveSponsor', actor=123, name='Bad', image='../secret.jpg', link='', display=True)
+        self.denied(400, 'saveSponsor', actor=123, name='Bad', image='javascript:alert(1)', link='', display=True)
+        # Invalid link
+        self.denied(400, 'saveSponsor', actor=123, name='Bad', image='logos/anicha.jpg', link='ftp://invalid', display=True)
+        # Invalid display
+        self.denied(400, 'saveSponsor', actor=123, name='Bad', image='logos/anicha.jpg', link='', display='yes')
+        # Valid remote image URL
+        res = self.call('saveSponsor', actor=123, name='Remote', image='https://cdn.example.com/logo.png', link='', display=True)
+        self.assertTrue(res['ok'])
 
     def test_rollback_after_partial_write(self):
         original = Transaction.execute

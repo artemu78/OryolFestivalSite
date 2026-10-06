@@ -3,6 +3,7 @@ import base64
 import json
 import logging
 import os
+import re
 import uuid
 from functools import lru_cache
 from urllib import request, parse, error
@@ -45,6 +46,24 @@ def text(value, limit, required=False):
         raise ApiError(400, 'Проверьте текстовые поля')
     return value.strip()
 
+def valid_sponsor_image(value):
+    if not isinstance(value, str) or len(value) > 1000 or not value.strip():
+        return False
+    value = value.strip()
+    if re.match(r'^logos\/[\w.-]+\.(?:png|jpe?g|webp|svg)$', value, re.IGNORECASE):
+        return True
+    parsed = parse.urlsplit(value)
+    return parsed.scheme in ('http', 'https') and bool(parsed.hostname) and not parsed.username and not parsed.password
+
+def valid_sponsor_link(value):
+    if not isinstance(value, str) or len(value) > 1000:
+        return False
+    value = value.strip()
+    if not value:
+        return True
+    parsed = parse.urlsplit(value)
+    return parsed.scheme in ('http', 'https') and bool(parsed.hostname) and not parsed.username and not parsed.password
+
 @lru_cache(maxsize=1)
 def allowed_photos():
     with open(os.path.join(os.path.dirname(__file__), 'allowed-photos.json'), encoding='utf-8') as source:
@@ -58,7 +77,8 @@ def operation(session, actor, action, body, new_id):
                  'uid':'Utf8', 'eid':'Utf8', 'name':'Utf8', 'note':'Utf8',
                  'title':'Utf8', 'description':'Utf8', 'role':'Utf8',
                  'photo':'Utf8', 'profile_url':'Utf8', 'professional_title':'Utf8',
-                 'bio':'Utf8', 'sort_order':'Int64'}
+                 'bio':'Utf8', 'sort_order':'Int64',
+                 'sid':'Utf8', 'image':'Utf8', 'link':'Utf8', 'display':'Bool'}
         declarations = ' '.join(f'DECLARE ${key} AS {types[key]};' for key in params)
         return tx.execute(session.prepare(declarations + sql), {'$'+k:v for k,v in params.items()})
     def rows(sql, **params):
@@ -99,7 +119,10 @@ def operation(session, actor, action, body, new_id):
                                      ('events','Events','id'), ('attendance','AttendanceV2','user_id, event_id'),
                                      ('hosts','HostsV2','user_id, event_id')]:
                 result[key] = rows(f'SELECT * FROM {table} ORDER BY {order};')
-            result['sponsors'] = rows('SELECT id, name, image, link, display FROM Sponsors WHERE display = true ORDER BY image, id;')
+            if 'admin' in actor_roles:
+                result['sponsors'] = rows('SELECT id, name, image, link, display FROM Sponsors ORDER BY image, id;')
+            else:
+                result['sponsors'] = rows('SELECT id, name, image, link, display FROM Sponsors WHERE display = true ORDER BY image, id;')
             for row in result['users']:
                 if row['vkontakte_id'] is not None:
                     row['vkontakte_id'] = str(row['vkontakte_id'])
@@ -216,6 +239,28 @@ def operation(session, actor, action, body, new_id):
                 else:
                     run(f'DELETE FROM {table} WHERE user_id=$uid AND event_id=$eid;',uid=uid,eid=eid)
                 result = {'ok':True}
+            elif action in ('saveSponsor', 'deleteSponsor'):
+                sid = text(body.get('id', new_id), 100, True)
+                if action == 'deleteSponsor':
+                    if not rows('SELECT id FROM Sponsors WHERE id=$sid;', sid=sid):
+                        raise ApiError(404, 'Спонсор удалён')
+                    run('DELETE FROM Sponsors WHERE id=$sid;', sid=sid)
+                else:
+                    name = text(body.get('name', ''), 300)
+                    image = text(body.get('image', ''), 1000, True)
+                    if not valid_sponsor_image(image):
+                        raise ApiError(400, 'Проверьте путь к логотипу (logos/...) или URL изображения')
+                    link = text(body.get('link', ''), 1000)
+                    if link and not valid_sponsor_link(link):
+                        raise ApiError(400, 'Проверьте ссылку спонсора (HTTPS или HTTP)')
+                    display = body.get('display')
+                    if display is None:
+                        display = True
+                    elif type(display) is not bool:
+                        raise ApiError(400, 'Некорректное поле display')
+                    run('UPSERT INTO Sponsors (id, name, image, link, display) VALUES ($sid, $name, $image, $link, $display);',
+                        sid=sid, name=name, image=image, link=link, display=display)
+                result = {'ok': True, 'id': sid}
             else:
                 raise ApiError(400, 'Неизвестное действие')
         tx.commit()
