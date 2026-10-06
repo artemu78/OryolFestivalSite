@@ -357,6 +357,24 @@
 .admin-modal form {
   max-width: 100%;
 }
+.admin-event-modal {
+  box-sizing: border-box;
+  width: calc(100% - 2rem);
+  max-height: calc(100dvh - 2rem);
+  margin: auto;
+  color: #203e33;
+  overscroll-behavior: contain;
+}
+.admin-event-modal::backdrop {
+  background: rgba(0, 0, 0, 0.65);
+}
+.admin-event-modal textarea {
+  resize: vertical;
+}
+.admin-event-modal button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
 .admin-modal-actions {
   display: flex;
   gap: 0.8rem;

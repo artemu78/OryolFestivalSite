@@ -28,6 +28,46 @@ const emptyEvent = { title: '', description: '' };
 const emptyProfile = { photo: photos[0], profile_url: '', professional_title: '', bio: '', sort_order: 0 };
 const emptySponsor = { name: '', image: logos[0] || 'logos/freedom.jpg', link: '', display: true };
 
+function EventModal({ initialEvent, busy, error, onSave, onClose }) {
+  const [event, setEvent] = useState(initialEvent);
+  const dialogRef = useRef(null);
+  const titleRef = useRef(null);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    const trigger = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    dialog.showModal();
+    titleRef.current?.focus({ preventScroll: true });
+    document.body.style.overflow = 'hidden';
+    return () => {
+      dialog.close();
+      document.body.style.overflow = previousOverflow;
+      trigger?.focus({ preventScroll: true });
+    };
+  }, []);
+
+  return (
+    <dialog ref={dialogRef} className="admin-modal admin-event-modal" aria-labelledby="event-modal-title"
+      onCancel={e => { e.preventDefault(); if (!busy) onClose(); }}>
+      <div className="admin-modal-header">
+        <h3 id="event-modal-title">{event.id ? 'Редактировать событие' : 'Новое событие'}</h3>
+        <button type="button" className="admin-modal-close" disabled={busy} onClick={onClose} aria-label="Закрыть">✕</button>
+      </div>
+      {error && <p className="admin-alert" role="alert">{error}</p>}
+      {busy && <p className="admin-status" role="status">Сохраняем…</p>}
+      <form onSubmit={async e => { e.preventDefault(); if (await onSave(event)) onClose(); }}>
+        <label>Название<input ref={titleRef} required disabled={busy} maxLength={300} value={event.title} onChange={e => setEvent({ ...event, title: e.target.value })}/></label>
+        <label>Описание<textarea rows={6} disabled={busy} maxLength={10000} value={event.description} onChange={e => setEvent({ ...event, description: e.target.value })}/></label>
+        <div className="admin-modal-actions">
+          <button disabled={busy}>Сохранить событие</button>
+          <button type="button" disabled={busy} onClick={onClose}>Отмена</button>
+        </div>
+      </form>
+    </dialog>
+  );
+}
+
 export function Admin() {
   const auth = useAuth();
   if (!auth.signedIn || !auth.admin) return <main id="main" className="wrap admin-page"><h1>Администрирование</h1><p>{!auth.signedIn ? 'Войдите через VK в меню сайта.' : 'Доступ предоставляется администраторам фестиваля.'}</p>{auth.roleError && <p role="alert">{auth.roleError}</p>}<a href="#">На сайт</a></main>;
@@ -41,7 +81,7 @@ function AdminSession({ auth }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [user, setUser] = useState(emptyUser);
-  const [event, setEvent] = useState(emptyEvent);
+  const [eventModal, setEventModal] = useState(null);
   const [profile, setProfile] = useState(null);
   const [sponsorModal, setSponsorModal] = useState(null);
   const alive = useRef(true);
@@ -294,11 +334,8 @@ function AdminSession({ auth }) {
       >
         <fieldset disabled={busy || !data}>
           <legend>События</legend>
-          <form onSubmit={async e => { e.preventDefault(); if (await mutate('saveEvent', event)) setEvent(emptyEvent); }}>
-            <label>Название<input required maxLength={300} value={event.title} onChange={e => setEvent({ ...event, title: e.target.value })}/></label>
-            <label>Описание<textarea maxLength={10000} value={event.description} onChange={e => setEvent({ ...event, description: e.target.value })}/></label><button>Сохранить событие</button>{event.id && <button type="button" onClick={() => setEvent(emptyEvent)}>Отмена</button>}
-          </form>
-          {data?.events.map(ev => <article key={ev.id}><h3>{ev.title}</h3><p>{ev.description}</p><button onClick={() => setEvent(ev)}>Изменить</button> <button onClick={() => { if (window.confirm(`Удалить «${ev.title}» и все связи?`)) mutate('deleteEvent', { id: ev.id }); }}>Удалить</button></article>)}
+          <button type="button" onClick={() => { setError(''); setEventModal({ ...emptyEvent }); }}>+ Добавить событие</button>
+          {data?.events.map(ev => <article key={ev.id}><h3>{ev.title}</h3><p>{ev.description}</p><button onClick={() => { setError(''); setEventModal({ ...ev }); }}>Изменить</button> <button onClick={() => { if (window.confirm(`Удалить «${ev.title}» и все связи?`)) mutate('deleteEvent', { id: ev.id }); }}>Удалить</button></article>)}
         </fieldset>
       </div>
 
@@ -362,6 +399,8 @@ function AdminSession({ auth }) {
         </div>)}
         </fieldset>
       </div>
+    {eventModal && <EventModal initialEvent={eventModal} busy={busy} error={error}
+      onSave={values => mutate('saveEvent', values)} onClose={() => setEventModal(null)}/>}
     {sponsorModal && (
       <div className="admin-modal-backdrop" role="presentation" onClick={() => setSponsorModal(null)}>
         <div
