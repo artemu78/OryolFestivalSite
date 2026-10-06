@@ -1615,10 +1615,26 @@ h2 em {
   justify-content: center;
   min-width: 0;
   aspect-ratio: 1.25;
-  padding: 20px;
   background: #fff;
   border: 1px solid #e5e4da;
   border-radius: 16px;
+  overflow: hidden;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.sponsor-card:not(.sponsor-card--clickable) {
+  padding: 20px;
+}
+.sponsor-card--clickable {
+  cursor: pointer;
+}
+.sponsor-card--clickable:hover {
+  transform: translateY(-4px);
+  border-color: #406a50;
+  box-shadow: 0 10px 24px rgba(23, 48, 36, 0.1);
+}
+.sponsor-card--clickable:active {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(23, 48, 36, 0.08);
 }
 .sponsor-logo {
   width: 100%;
@@ -1633,6 +1649,10 @@ h2 em {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  transition: transform 0.25s ease;
+}
+.sponsor-card--clickable:hover .sponsor-logo img {
+  transform: scale(1.03);
 }
 /* The supplied Braf file is a phone screenshot. Show only its central logo. */
 .sponsor-logo--screenshot {
@@ -1643,16 +1663,18 @@ h2 em {
   width: auto;
   height: 222%;
   max-width: none;
-
 }
 @media (max-width: 1000px) {
   .sponsor-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .sponsor-card { padding: 16px; }
+  .sponsor-card:not(.sponsor-card--clickable) { padding: 16px; }
+  .sponsor-link { padding: 16px; }
 }
 @media (max-width: 700px) {
   .sponsors { margin-top: 50px; }
   .sponsor-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-  .sponsor-card { padding: 16px; border-radius: 12px; }
+  .sponsor-card { border-radius: 12px; }
+  .sponsor-card:not(.sponsor-card--clickable) { padding: 16px; }
+  .sponsor-link { padding: 16px; border-radius: 12px; }
 }
 
 .sponsor-link {
@@ -1661,8 +1683,25 @@ h2 em {
   justify-content: center;
   width: 100%;
   height: 100%;
-  border-radius: 4px;
+  padding: 20px;
+  box-sizing: border-box;
+  text-decoration: none;
+  border-radius: 16px;
 }
-.sponsor-card:has(.sponsor-link:hover) {
-  border-color: #a7b499;
+.sponsor-link:focus-visible {
+  outline: 3px solid #406a50;
+  outline-offset: -3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sponsor-card,
+  .sponsor-logo img {
+    transition: none;
+  }
+  .sponsor-card--clickable:hover {
+    transform: none;
+  }
+  .sponsor-card--clickable:hover .sponsor-logo img {
+    transform: none;
+  }
 }

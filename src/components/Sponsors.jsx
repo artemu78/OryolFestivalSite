@@ -41,9 +41,21 @@ export function Sponsors() {
                 </div>
               );
               return (
-                <li className="sponsor-card" key={id}>
-                  {href ? <a className="sponsor-link" href={href} target="_blank" rel="noreferrer"
-                    aria-label={name?.trim() || content.Sponsors.linkLabel}>{logo}</a> : logo}
+                <li className={`sponsor-card${href ? " sponsor-card--clickable" : ""}`} key={id}>
+                  {href ? (
+                    <a
+                      className="sponsor-link"
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={name?.trim() || content.Sponsors.linkLabel}
+                      title={name?.trim() || href}
+                    >
+                      {logo}
+                    </a>
+                  ) : (
+                    logo
+                  )}
                 </li>
               );
             })}
