@@ -93,6 +93,11 @@ def operation(session, actor, action, body, new_id):
         return found[0]
     def roles(uid):
         return {row['role'] for row in rows('SELECT role FROM UserRoles WHERE user_id=$uid;', uid=uid)}
+    def require_admin():
+        if not actor:
+            raise ApiError(401, 'Войдите через VK')
+        if 'admin' not in actor_roles:
+            raise ApiError(403, 'Доступ только для администратора')
     def protect_admin(uid, current_roles):
         if 'admin' not in current_roles:
             return
@@ -112,17 +117,22 @@ def operation(session, actor, action, body, new_id):
             else:
                 actor_uid = None
         actor_roles = roles(actor_uid) if actor_uid else set()
-        if action == 'list':
+        if action in ('list', 'adminList'):
+            if action == 'adminList':
+                require_admin()
             result = {}
             for key, table, order in [('users','Users','id'), ('roles','UserRoles','user_id, role'),
                                      ('expert_profiles','ExpertProfiles','sort_order, user_id'),
                                      ('events','Events','id'),
                                      ('hosts','HostsV2','user_id, event_id')]:
                 result[key] = rows(f'SELECT * FROM {table} ORDER BY {order};')
-            result['attendance'] = rows(
-                'SELECT event_id FROM AttendanceV2 WHERE user_id=$uid ORDER BY event_id;',
-                uid=actor_uid,
-            ) if actor_uid else []
+            if action == 'adminList':
+                result['attendance'] = rows('SELECT user_id, event_id FROM AttendanceV2 ORDER BY user_id, event_id;')
+            else:
+                result['attendance'] = rows(
+                    'SELECT event_id FROM AttendanceV2 WHERE user_id=$uid ORDER BY event_id;',
+                    uid=actor_uid,
+                ) if actor_uid else []
             if 'admin' in actor_roles:
                 result['sponsors'] = rows('SELECT id, name, image, link, display FROM Sponsors ORDER BY image, id;')
             else:
@@ -138,10 +148,7 @@ def operation(session, actor, action, body, new_id):
                       'name':actor_user['name'] if actor_user else None,
                       'attendee':'attendee' in actor_roles, 'admin':'admin' in actor_roles, 'expert':expert}
         else:
-            if not actor:
-                raise ApiError(401, 'Войдите через VK')
-            if 'admin' not in actor_roles:
-                raise ApiError(403, 'Доступ только для администратора')
+            require_admin()
             if os.environ.get('ADMIN_WRITES_DISABLED', 'false').lower() == 'true':
                 raise ApiError(503, 'Изменения временно приостановлены')
             if action == 'saveUser':

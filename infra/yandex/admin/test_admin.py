@@ -128,6 +128,45 @@ class PolicyTests(unittest.TestCase):
         self.call('saveUser', id='other', vkontakte_id=None, name='Other', note='')
         self.assertEqual(self.call('list', actor=456)['attendance'], [])
 
+    def test_admin_list_returns_all_attendance_and_refreshes_after_changes(self):
+        self.call('saveRoles', user_id='admin', roles=['admin', 'attendee'])
+        self.call('saveRoles', user_id='other', roles=['attendee'])
+        for uid in ('admin', 'other'):
+            self.call('attendance', user_id=uid, event_id='event', enabled=True)
+        listing = self.call('adminList')
+        self.assertEqual(listing['attendance'], [
+            {'user_id': 'admin', 'event_id': 'event'},
+            {'user_id': 'other', 'event_id': 'event'},
+        ])
+        public_listing = self.call('list')
+        self.assertEqual(public_listing['attendance'], [{'event_id': 'event'}])
+        for key in listing.keys() - {'attendance'}:
+            self.assertEqual(listing[key], public_listing[key])
+        self.call('attendance', user_id='other', event_id='event', enabled=False)
+        self.assertEqual(self.call('adminList')['attendance'],
+                         [{'user_id': 'admin', 'event_id': 'event'}])
+
+    def test_admin_list_requires_current_admin_role(self):
+        for actor, status in ((None, 401), (456, 403), (999, 403)):
+            self.denied(status, 'adminList', actor=actor)
+            self.assertEqual(self.session.tx.writes, 0)
+        self.call('saveRoles', user_id='other', roles=['admin'])
+        self.call('adminList', actor=456)
+        self.call('saveRoles', user_id='other', roles=[])
+        self.denied(403, 'adminList', actor=456)
+
+    def test_admin_list_handler_rejects_missing_or_invalid_token(self):
+        with patch.object(index, 'pool') as pool:
+            response = index.handler({'httpMethod': 'POST', 'body': '{"action":"adminList"}'}, None)
+            self.assertEqual(response['statusCode'], 401)
+            with patch.object(index, 'vk_identity', side_effect=index.ApiError(401, 'Invalid token')):
+                response = index.handler({
+                    'httpMethod': 'POST', 'body': '{"action":"adminList"}',
+                    'headers': {'X-VK-Token': 'Bearer invalid'},
+                }, None)
+            self.assertEqual(response['statusCode'], 401)
+            pool.assert_not_called()
+
     def test_unknown_login_does_not_write(self):
         self.assertEqual(self.call('me',actor=999),dict(user_id=None,vkontakte_id='999',name=None,attendee=False,admin=False,expert=False))
         self.assertEqual(self.session.tx.writes,0)
@@ -259,6 +298,7 @@ class PolicyTests(unittest.TestCase):
         with patch.dict(os.environ,{'ADMIN_WRITES_DISABLED':'true'}):
             self.call('me')
             self.call('list')
+            self.call('adminList')
             for action in ('saveUser','deleteUser','saveRoles','saveExpertProfile','deleteExpertProfile','saveEvent','deleteEvent','saveSponsor','deleteSponsor','attendance','host'):
                 self.denied(503,action)
                 self.assertEqual(self.session.tx.writes,0)

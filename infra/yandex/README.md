@@ -125,6 +125,12 @@ content/custom metadata, guards the copy with the current ETag and verifies
 Cache-Control and unchanged ETag afterwards. Tokens are never printed or saved
 to Terraform state. Uploads or script/policy changes rerun it; unchanged headers
 are skipped. A failed step fails the apply and is retried on the next apply.
+Individual requests retry transient connection/DNS/timeouts and HTTP 408/429/
+500/502/503/504 up to four attempts, with 1/2/4-second backoff. Response body
+reads are included in the retry boundary; repeated copies keep the same ETag
+precondition. Errors identify the method, host/path, HTTP status or underlying
+network error code and attempt count, without printing credentials or bodies.
+Authentication/permission errors and certificate failures are not retried.
 Out-of-band header drift is not detected by plan; repair it with a reviewed plan
 using `-replace=terraform_data.site_cache_headers`.
 

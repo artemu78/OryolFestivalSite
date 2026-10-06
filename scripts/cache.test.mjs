@@ -61,3 +61,63 @@ test('failed read-back verification fails the Terraform step', async t => {
     : new Response(null, { headers: { etag: '"original"' } }));
   await assert.rejects(setCacheHeaders([object], 'test-token'), /verification failed/);
 });
+
+test('a temporary connection reset is retried without losing the cache update', async t => {
+  let calls = 0;
+  t.mock.method(globalThis, 'fetch', async () => {
+    if (++calls === 1) throw new TypeError('fetch failed', { cause: Object.assign(new Error('socket closed'), { code: 'ECONNRESET' }) });
+    return new Response(null, { headers: { etag: '"original"', 'cache-control': object.cache_control } });
+  });
+  assert.equal(await setCacheHeaders([object], 'test-token'), 0);
+  assert.equal(calls, 2);
+});
+
+test('permanent TLS errors identify the request and cause without leaking credentials', async t => {
+  let calls = 0;
+  t.mock.method(globalThis, 'fetch', async () => {
+    calls++;
+    throw new TypeError('fetch failed', { cause: Object.assign(new Error('private-token'), { code: 'CERT_HAS_EXPIRED' }) });
+  });
+  await assert.rejects(setCacheHeaders([object], 'private-token'), error => {
+    assert.match(error.message, /HEAD storage\.yandexcloud\.net\/example\.test\/girls\/a%20b\.jpg/);
+    assert.match(error.message, /CERT_HAS_EXPIRED/);
+    assert.doesNotMatch(error.message, /private-token/);
+    return true;
+  });
+  assert.equal(calls, 1);
+});
+
+test('lost copy response is retried with the same ETag precondition', async t => {
+  let copies = 0;
+  const etag = '"original"';
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    if (options.method === 'PUT') {
+      assert.equal(options.headers['x-amz-copy-source-if-match'], etag);
+      if (++copies === 1) return {
+        ok: true,
+        text: async () => { throw new TypeError('terminated', { cause: Object.assign(new Error(), { code: 'UND_ERR_SOCKET' }) }); },
+      };
+      return new Response('<CopyObjectResult/>');
+    }
+    return new Response(null, { headers: { etag, ...(copies ? { 'cache-control': object.cache_control } : {}) } });
+  });
+  assert.equal(await setCacheHeaders([object], 'test-token'), 1);
+  assert.equal(copies, 2);
+});
+
+test('access denied is reported immediately instead of retried', async t => {
+  let calls = 0;
+  t.mock.method(globalThis, 'fetch', async () => { calls++; return new Response('', { status: 403 }); });
+  await assert.rejects(setCacheHeaders([object], 'test-token'), /HEAD storage.*HTTP 403 \(attempt 1\/4\)/);
+  assert.equal(calls, 1);
+});
+
+test('persistent connection failures stop after four attempts', async t => {
+  let calls = 0;
+  t.mock.method(globalThis, 'fetch', async () => {
+    calls++;
+    throw new TypeError('fetch failed', { cause: Object.assign(new Error(), { code: 'ETIMEDOUT' }) });
+  });
+  await assert.rejects(setCacheHeaders([object], 'test-token'), /ETIMEDOUT \(attempt 4\/4\)/);
+  assert.equal(calls, 4);
+});

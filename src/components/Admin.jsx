@@ -62,7 +62,7 @@ function AdminSession({ auth }) {
   useEffect(() => {
     alive.current = true;
     let active = true;
-    adminRequest(access_token, 'list').then(result => {
+    adminRequest(access_token, 'adminList').then(result => {
       if (active && isCurrentSession(access_token, sessionRevision)) setData(result);
     }).catch(err => { if (active && isCurrentSession(access_token, sessionRevision)) setError(err.message); });
     return () => { active = false; alive.current = false; };
@@ -73,7 +73,7 @@ function AdminSession({ auth }) {
     try {
       await adminRequest(access_token, action, values);
       if (!current()) return false;
-      const result = await adminRequest(access_token, 'list');
+      const result = await adminRequest(access_token, 'adminList');
       if (!current()) return false;
       setData(result); return true;
     } catch (err) { if (current()) setError(err.message); return false; }

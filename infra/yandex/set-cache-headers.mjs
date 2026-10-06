@@ -1,13 +1,45 @@
 import { constants, sign } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
+import { setTimeout as delay } from 'node:timers/promises';
 
 const iamUrl = 'https://iam.api.cloud.yandex.net/iam/v1/tokens';
+const transientCodes = new Set([
+  'ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'EAI_AGAIN', 'ENOTFOUND',
+  'UND_ERR_CONNECT_TIMEOUT', 'UND_ERR_HEADERS_TIMEOUT', 'UND_ERR_BODY_TIMEOUT', 'UND_ERR_SOCKET',
+]);
+
+function errorCodes(error) {
+  return [error?.code, error?.name === 'TimeoutError' ? 'TimeoutError' : null,
+    ...(error?.cause ? errorCodes(error.cause) : []),
+    ...(error?.errors || []).flatMap(errorCodes),
+  ].filter(code => typeof code === 'string' && /^[A-Za-z0-9_]+$/.test(code));
+}
 
 async function request(url, options = {}) {
-  const response = await fetch(url, { ...options, redirect: 'error', signal: AbortSignal.timeout(60000) });
-  if (!response.ok) throw new Error(`Cloud request failed: HTTP ${response.status}`);
-  return response;
+  const target = new URL(url);
+  const label = `${options.method || 'GET'} ${target.host}${target.pathname}`;
+  const attempts = 4;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    let failure;
+    let retryable;
+    try {
+      const response = await fetch(url, { ...options, redirect: 'error', signal: AbortSignal.timeout(60000) });
+      // Consume the body within the retry boundary: a connection can fail after headers.
+      const body = await response.text();
+      if (response.ok) return { headers: response.headers, body };
+      failure = `HTTP ${response.status}`;
+      retryable = [408, 429, 500, 502, 503, 504].includes(response.status);
+    } catch (error) {
+      const codes = [...new Set(errorCodes(error))];
+      failure = codes.join(', ') || 'network request failed without an error code';
+      retryable = codes.some(code => transientCodes.has(code) || code === 'TimeoutError');
+    }
+    const message = `${label}: ${failure} (attempt ${attempt}/${attempts})`;
+    if (!retryable || attempt === attempts) throw new Error(message);
+    console.error(`${message}; retrying`);
+    await delay(1000 * 2 ** (attempt - 1));
+  }
 }
 
 export async function iamToken() {
@@ -29,7 +61,7 @@ export async function iamToken() {
   const response = await request(iamUrl, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
   });
-  const result = await response.json();
+  const result = JSON.parse(response.body);
   if (!result.iamToken) throw new Error('IAM response did not contain a token');
   return result.iamToken;
 }
@@ -58,7 +90,7 @@ export async function setCacheHeaders(objects, token) {
       }
     }
     const copied = await request(url, { method: 'PUT', headers, body: '' });
-    const body = await copied.text();
+    const body = copied.body;
     // S3 can return an embedded error even with status 200.
     if (!body.includes('<CopyObjectResult') || body.includes('<Error')) throw new Error(`Copy failed: ${object.key}`);
     const verified = await request(url, { method: 'HEAD', headers: auth });
