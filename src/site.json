@@ -117,6 +117,7 @@
   },
   "calendar": {
     "linkLabel": "Добавить в Google Календарь ↗",
+    "appleLinkLabel": "Добавить в Apple Календарь ↗",
     "start": "20261010T083000Z",
     "end": "20261010T153000Z",
     "timeZone": "Europe/Moscow"

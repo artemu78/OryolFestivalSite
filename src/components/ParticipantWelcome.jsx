@@ -24,6 +24,10 @@ export function ParticipantWelcome() {
           <a className="participant-welcome-calendar" href={calendarUrl} target="_blank" rel="noopener noreferrer">
             {content.calendar.linkLabel}
           </a>
+          {" · "}
+          <a className="participant-welcome-calendar" href={`${import.meta.env.BASE_URL}festival-2026.ics`}>
+            {content.calendar.appleLinkLabel}
+          </a>
         </p>
       )}
     </div>

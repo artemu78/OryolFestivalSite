@@ -1,0 +1,20 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Oryol Mental Health Festival//Calendar//RU
+CALSCALE:GREGORIAN
+BEGIN:VEVENT
+UID:festival-20261010@mentalhealthfestival.ru
+DTSTAMP:20261007T000000Z
+DTSTART:20261010T083000Z
+DTEND:20261010T153000Z
+SUMMARY:Ближе к себе — Фестиваль ментальног
+ о здоровья в Орле
+LOCATION:Коворкинг Freedom\, Орёл\, наб. Дубровинс
+ кого\, 60Б
+DESCRIPTION:Первый Фестиваль ментального здор
+ овья в Орле. 10 октября 2026: разговоры о важ
+ ном\, знакомство с экспертами и бережные 
+ практики.\nhttps://vk.ru/club241058655
+URL:https://vk.ru/club241058655
+END:VEVENT
+END:VCALENDAR

@@ -25,6 +25,7 @@ locals {
     woff  = "font/woff"
     woff2 = "font/woff2"
     txt   = "text/plain; charset=utf-8"
+    ics   = "text/calendar; charset=utf-8"
   }
   site_cache_objects = [
     for name, object in local.site_objects : {
