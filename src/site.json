@@ -115,6 +115,12 @@
     "social": "Мы ВКонтакте ↗",
     "sponsors": "Спонсоры"
   },
+  "calendar": {
+    "linkLabel": "Добавить в Google Календарь ↗",
+    "start": "20261010T083000Z",
+    "end": "20261010T153000Z",
+    "timeZone": "Europe/Moscow"
+  },
   "venue": {
     "name": "Коворкинг Freedom",
     "address": "Орёл, наб. Дубровинского, 60Б",

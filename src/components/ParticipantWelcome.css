@@ -12,3 +12,11 @@
   line-height: 1.5;
   border-top: 1px solid #bfc7b7;
 }
+
+.participant-welcome-calendar {
+  display: inline-block;
+  padding: 8px 0;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
