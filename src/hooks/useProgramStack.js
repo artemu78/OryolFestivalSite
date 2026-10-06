@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 
 // Keep scroll progress outside React rendering; CSS owns the presentation.
-export function useProgramStack(filter) {
+export function useProgramStack(sessionGroups) {
   const stackRef = useRef(null);
 
   useEffect(() => {
@@ -60,7 +60,7 @@ export function useProgramStack(filter) {
         group.removeAttribute("data-covered");
       });
     };
-  }, [filter, stackRef.current?.children.length]);
+  }, [sessionGroups]);
 
   return stackRef;
 }

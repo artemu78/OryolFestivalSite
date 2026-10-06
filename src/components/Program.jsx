@@ -31,7 +31,11 @@ function groupSessions(items) {
 }
 
 export function Program() {
-  const { events, hosts, expertProfiles, loading, dataError } = useData();
+  const { events, hosts, expertProfiles, attendance, loading, dataError } = useData();
+  const attendedEventIds = useMemo(
+    () => new Set(attendance.map(({ event_id }) => event_id)),
+    [attendance],
+  );
   const [filter, setFilter] = useState(content.Program.all);
 
   const sessions = useMemo(() => {
@@ -89,7 +93,7 @@ export function Program() {
     () => groupSessions(visibleSessions),
     [visibleSessions],
   );
-  const stackRef = useProgramStack(filter);
+  const stackRef = useProgramStack(groups);
 
   return (
     <section id="program" className="program section">
@@ -151,6 +155,7 @@ export function Program() {
                       key={item.id || item.title}
                       item={item}
                       index={sessions.indexOf(item)}
+                      attended={attendedEventIds.has(item.id)}
                     />
                   ))}
                 </div>
@@ -164,7 +169,7 @@ export function Program() {
   );
 }
 
-function SessionCard({ item, index }) {
+function SessionCard({ item, index, attended }) {
   return (
     <article className="session">
       {item.background && (
@@ -178,6 +183,12 @@ function SessionCard({ item, index }) {
       )}
       <div className="session-body">
         <span className="session-tag">{item.tag}</span>
+        {attended && (
+          <div className="session-attendance">
+            <span aria-hidden="true">✓</span>
+            {content.Program.attended}
+          </div>
+        )}
         <h3>{item.title}</h3>
         <p>{item.text}</p>
         <div className="session-people">

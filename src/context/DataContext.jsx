@@ -11,6 +11,7 @@ export function DataProvider({ children }) {
   const [users, setUsers] = useState([]);
   const [expertProfiles, setExpertProfiles] = useState([]);
   const [hosts, setHosts] = useState([]);
+  const [attendance, setAttendance] = useState([]);
   const [sponsors, setSponsors] = useState([]);
   const [dataError, setDataError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -22,6 +23,7 @@ export function DataProvider({ children }) {
     setEvents([]);
     setExpertProfiles([]);
     setHosts([]);
+    setAttendance([]);
     setSponsors([]);
     setLoadedRevision(null);
     setDataError("");
@@ -51,6 +53,7 @@ export function DataProvider({ children }) {
 
         setExpertProfiles(enhancedProfiles);
         setHosts(Array.isArray(result.hosts) ? result.hosts : emptyRows);
+        setAttendance(Array.isArray(result.attendance) ? result.attendance : emptyRows);
         setSponsors(Array.isArray(result.sponsors) ? result.sponsors : emptyRows);
         setLoadedRevision(sessionRevision);
       })
@@ -79,11 +82,12 @@ export function DataProvider({ children }) {
       setExpertProfiles,
       hosts: hasCurrentData ? hosts : emptyRows,
       setHosts,
+      attendance: hasCurrentData ? attendance : emptyRows,
       sponsors: hasCurrentData ? sponsors : emptyRows,
       loading,
       dataError,
     }),
-    [hasCurrentData, users, events, expertProfiles, hosts, sponsors, loading, dataError],
+    [hasCurrentData, users, events, expertProfiles, hosts, attendance, sponsors, loading, dataError],
   );
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
