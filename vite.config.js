@@ -2,10 +2,15 @@ import pkg from "./package.json";
 import content from "./src/site.json";
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { publicAssetVersions } from './scripts/public-asset-versions.js';
+import { fileURLToPath } from 'node:url';
+
+const assetVersions = publicAssetVersions(fileURLToPath(new URL('./public', import.meta.url)));
 
 export default defineConfig({
   define: {
     'import.meta.env.VITE_APP_VERSION': JSON.stringify(pkg.version),
+    __PUBLIC_ASSET_VERSIONS__: JSON.stringify(assetVersions),
   },
   base: process.env.PAGES_BASE_PATH || '/',
   plugins: [react(), {
@@ -13,7 +18,8 @@ export default defineConfig({
     transformIndexHtml(html) {
       const escape = value => value.replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
       return html.replace('%SITE_TITLE%', escape(content.metadata.title))
-        .replace('%SITE_DESCRIPTION%', escape(content.metadata.description));
+        .replace('%SITE_DESCRIPTION%', escape(content.metadata.description))
+        .replace('favicon.svg"', `favicon.svg?v=${assetVersions['favicon.svg']}"`);
     },
   }],
   server: {

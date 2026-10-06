@@ -1,3 +1,4 @@
+import { assetUrl } from '../assetUrl';
 import React from "react";
 import content from "../site.json";
 import { useData } from "../context/DataContext";
@@ -16,7 +17,7 @@ export function imageUrl(value) {
   const remote = webUrl(value);
   if (remote) return remote;
   if (typeof value !== "string" || !/^logos\/[\w.-]+\.(?:png|jpe?g|webp|svg)$/i.test(value)) return null;
-  return `${import.meta.env.BASE_URL}${value}`;
+  return assetUrl(value);
 }
 
 export function Sponsors() {

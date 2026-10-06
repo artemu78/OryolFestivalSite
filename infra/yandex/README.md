@@ -103,6 +103,38 @@ use Yandex Cloud DNS or choose another hosting design.
 
 ## Verify and update
 
+### Browser cache headers
+
+Terraform manages cache headers for both website buckets. Hashed JS/CSS in
+`assets/` gets `public, max-age=31536000, immutable`; images, video and fonts
+get `public, max-age=2592000`; HTML and other files get `no-cache`.
+Local media URLs include a content hash query parameter computed at build time.
+After replacing a file in `public/`, rebuild and publish the app as well as the
+file. Do not replace media manually without rebuilding its URL manifest.
+External sponsor images and GitHub Pages headers are outside this policy.
+
+Yandex provider 0.235.0 has no `cache_control` object argument. The built-in
+`terraform_data.site_cache_headers` resource runs `set-cache-headers.mjs` after
+uploads. It requires Node.js 22+ and the same `YC_TOKEN` (IAM or Yandex OAuth) or
+`YC_SERVICE_ACCOUNT_KEY_FILE` environment as the provider. Key paths must be
+absolute, as the provisioner runs from `infra/yandex`. No extra npm packages,
+CLI installation, static S3 keys, or UI steps are needed.
+
+The script copies objects onto themselves using the S3 API, preserves existing
+content/custom metadata, guards the copy with the current ETag and verifies
+Cache-Control and unchanged ETag afterwards. Tokens are never printed or saved
+to Terraform state. Uploads or script/policy changes rerun it; unchanged headers
+are skipped. A failed step fails the apply and is retried on the next apply.
+Out-of-band header drift is not detected by plan; repair it with a reviewed plan
+using `-replace=terraform_data.site_cache_headers`.
+
+Run `node --test scripts/cache.test.mjs` for local regression checks. After apply,
+verify live headers for HTML, a hashed JS asset and a versioned image/video on
+both domains. This policy improves repeat visits; it does not shrink first-load
+images or control third-party caching.
+
+### Site and API checks
+
 ```sh
 curl -fsS "$(terraform -chdir=infra/yandex output -raw function_url)"
 curl -fsS -X POST "$(terraform -chdir=infra/yandex output -raw function_url)"

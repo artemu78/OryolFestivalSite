@@ -1,3 +1,4 @@
+import { assetUrl } from '../assetUrl';
 import content from "../site.json";
 import React, { useMemo, useState } from "react";
 import { useData } from "../context/DataContext";
@@ -175,7 +176,7 @@ function SessionCard({ item, index, attended }) {
       {item.background && (
         <div className="session-bg" aria-hidden="true">
           <img
-            src={`${import.meta.env.BASE_URL}${item.background}`}
+            src={assetUrl(item.background)}
             alt=""
             loading="lazy"
           />
@@ -201,7 +202,7 @@ function SessionCard({ item, index, attended }) {
               rel="noreferrer"
             >
               <img
-                src={`${import.meta.env.BASE_URL}${person.photo}`}
+                src={assetUrl(person.photo)}
                 alt={person.name}
                 loading="lazy"
                 width="48"

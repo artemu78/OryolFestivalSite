@@ -26,6 +26,16 @@ locals {
     woff2 = "font/woff2"
     txt   = "text/plain; charset=utf-8"
   }
+  site_cache_objects = [
+    for name, object in local.site_objects : {
+      bucket = var.domains[object.domain_key]
+      key    = object.file
+      hash   = filemd5("${local.site_dir}/${object.file}")
+      cache_control = can(regex("^assets/.+-[A-Za-z0-9_-]{8,}\\.(js|css)$", object.file)) ? "public, max-age=31536000, immutable" : (
+        can(regex("(?i)\\.(png|jpe?g|webp|svg|ico|mp4|woff2?)$", object.file)) ? "public, max-age=2592000" : "no-cache"
+      )
+    }
+  ]
 }
 
 resource "yandex_cm_certificate" "site" {
@@ -94,4 +104,26 @@ resource "yandex_storage_object" "site" {
   source       = "${local.site_dir}/${each.value.file}"
   source_hash  = filemd5("${local.site_dir}/${each.value.file}")
   content_type = lookup(local.mime_types, lower(element(reverse(split(".", each.value.file)), 0)), "application/octet-stream")
+}
+
+# Provider 0.235.0 does not expose Cache-Control. Apply it through the S3 API
+# after uploads, retaining the provider's ownership of object content/deletion.
+resource "terraform_data" "site_cache_headers" {
+  triggers_replace = [
+    sha256(jsonencode(local.site_cache_objects)),
+    filesha256("${path.module}/set-cache-headers.mjs"),
+  ]
+  depends_on = [yandex_storage_object.site]
+
+  lifecycle {
+    replace_triggered_by = [yandex_storage_object.site]
+  }
+
+  provisioner "local-exec" {
+    command     = "node set-cache-headers.mjs"
+    working_dir = path.module
+    environment = {
+      SITE_CACHE_OBJECTS = jsonencode(local.site_cache_objects)
+    }
+  }
 }

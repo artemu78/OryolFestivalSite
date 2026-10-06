@@ -1,3 +1,4 @@
+import { assetUrl } from '../assetUrl';
 import content from "../site.json";
 import React, { useState, useRef, useEffect } from "react";
 
@@ -17,10 +18,10 @@ export function HeroMedia() {
     return () => mql.removeEventListener("change", onChange);
   }, []);
 
-  const poster = `${import.meta.env.BASE_URL}girls/1001.png`;
-  const mobilePoster = `${import.meta.env.BASE_URL}girls/1001-mobile.png`;
-  const desktopVideo = `${import.meta.env.BASE_URL}girls/gemini_generated_video_4ba23423.mp4`;
-  const mobileVideo = `${import.meta.env.BASE_URL}girls/gemini_generated_video_mobile.mp4`;
+  const poster = assetUrl('girls/1001.png');
+  const mobilePoster = assetUrl('girls/1001-mobile.png');
+  const desktopVideo = assetUrl('girls/gemini_generated_video_4ba23423.mp4');
+  const mobileVideo = assetUrl('girls/gemini_generated_video_mobile.mp4');
 
   function togglePlayback() {
     const video = videoRef.current;

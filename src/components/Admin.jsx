@@ -1,3 +1,4 @@
+import { assetUrl } from '../assetUrl';
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { adminApiUrl, adminRequest } from '../admin-api';
@@ -231,7 +232,7 @@ function AdminSession({ auth }) {
         {profile && <fieldset disabled={busy || !data}><legend>Профиль эксперта: {data.users.find(u => u.id === profile.user_id)?.name}</legend><p>Изменения появятся на публичном сайте после экспорта, сборки и публикации.</p>
           <form onSubmit={async e => { e.preventDefault(); if (await mutate('saveExpertProfile', profile)) setProfile(null); }}>
             <label>Портрет<select ref={portraitSelect} value={profile.photo} onChange={e => setProfile({ ...profile, photo: e.target.value })}>{photos.map(photo => <option key={photo} value={photo}>{photo.split('/').pop()}</option>)}</select></label>
-            <img className="admin-portrait" src={`${import.meta.env.BASE_URL}${profile.photo}`} alt="Предпросмотр портрета"/>
+            <img className="admin-portrait" src={assetUrl(profile.photo)} alt="Предпросмотр портрета"/>
             <label>Ссылка на профиль (HTTPS)<input required type="url" pattern="https://.*" maxLength={1000} value={profile.profile_url} onChange={e => setProfile({ ...profile, profile_url: e.target.value })}/></label>
             <label>Профессиональное описание<input maxLength={500} value={profile.professional_title} onChange={e => setProfile({ ...profile, professional_title: e.target.value })}/></label>
             <label>Биография<textarea maxLength={10000} value={profile.bio} onChange={e => setProfile({ ...profile, bio: e.target.value })}/></label>
