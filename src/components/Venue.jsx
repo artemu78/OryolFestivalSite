@@ -1,6 +1,7 @@
 import content from "../site.json";
 import React from "react";
-import { venue } from "../program";
+
+const venue = content.venue;
 
 export function Venue() {
   return (

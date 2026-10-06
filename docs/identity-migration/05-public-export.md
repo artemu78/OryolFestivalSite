@@ -4,7 +4,7 @@
 
 Make YDB the source of truth for expert profiles while retaining static delivery. Add a controlled build-time public JSON export from Users/ExpertProfiles. Export only approved public fields, excluding VK IDs, notes, roles and attendance. Never expose credentials in the browser.
 
-Use stable internal expert IDs in public data and replace programme name references with IDs in experts.js, program.js and program.json. Preserve current programme content, order, portraits, links and layout; respect AGENTS.md expert exclusion. Validate missing experts/photos. Keep event scheduling in program.json.
+Use stable internal expert IDs in public data and replace programme name references with IDs in experts.js and program.json. Preserve current programme content, order, portraits, links and layout; respect AGENTS.md expert exclusion. Validate missing experts/photos. Keep event scheduling in program.json.
 
 Document export/rebuild/publication after expert edits; implement reproducible generation/validation. Verify root and Pages builds and desktop/mobile rendering. Preserve pre-existing programme edits. Use Context7 where applicable. Do not deploy, commit or push.
 
