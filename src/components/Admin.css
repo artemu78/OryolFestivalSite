@@ -61,16 +61,18 @@
 .admin-tabs {
   display: flex;
   gap: 0.5rem;
-  border-bottom: 2px solid #d4d9ca;
+  background: linear-gradient(#d4d9ca, #d4d9ca) bottom / 100% 2px no-repeat;
   padding-bottom: 0;
   overflow-x: auto;
+  overflow-y: hidden;
   scrollbar-width: thin;
 }
-.admin-tab-btn {
+.admin-page .admin-tab-btn {
+  flex: 0 0 auto;
   appearance: none;
   background: transparent;
-  border: none;
-  border-bottom: 3px solid transparent;
+  border: 1px solid #d4d9ca;
+  border-bottom: 2px solid #d4d9ca;
   color: #556c5a;
   font-family: inherit;
   font-size: calc(13px * var(--font-scale));
@@ -80,16 +82,24 @@
   border-radius: 8px 8px 0 0;
   transition: color 0.15s, border-color 0.15s, background-color 0.15s;
   white-space: nowrap;
-  margin-bottom: -2px;
+  margin: 0;
 }
-.admin-tab-btn:hover {
+.admin-page .admin-tab-btn:hover {
   color: #203e33;
   background-color: rgba(64, 106, 80, 0.06);
 }
-.admin-tab-btn--active {
-  color: #203e33;
-  border-bottom-color: #203e33;
-  background-color: rgba(64, 106, 80, 0.08);
+.admin-page .admin-tab-btn--active,
+.admin-page .admin-tab-btn--active:hover {
+  color: #f7f5ed;
+  border-color: #203e33;
+  border-bottom: 0;
+  background-color: #203e33;
+}
+.admin-page .admin-tab-btn:focus-visible {
+  outline-offset: -4px;
+}
+.admin-page .admin-tab-btn--active:focus-visible {
+  outline-color: #f7f5ed;
 }
 
 /* Mobile dropdown - Hidden on desktop */
