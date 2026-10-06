@@ -116,9 +116,13 @@ def operation(session, actor, action, body, new_id):
             result = {}
             for key, table, order in [('users','Users','id'), ('roles','UserRoles','user_id, role'),
                                      ('expert_profiles','ExpertProfiles','sort_order, user_id'),
-                                     ('events','Events','id'), ('attendance','AttendanceV2','user_id, event_id'),
+                                     ('events','Events','id'),
                                      ('hosts','HostsV2','user_id, event_id')]:
                 result[key] = rows(f'SELECT * FROM {table} ORDER BY {order};')
+            result['attendance'] = rows(
+                'SELECT event_id FROM AttendanceV2 WHERE user_id=$uid ORDER BY event_id;',
+                uid=actor_uid,
+            ) if actor_uid else []
             if 'admin' in actor_roles:
                 result['sponsors'] = rows('SELECT id, name, image, link, display FROM Sponsors ORDER BY image, id;')
             else:

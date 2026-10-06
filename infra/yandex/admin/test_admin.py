@@ -113,6 +113,21 @@ class PolicyTests(unittest.TestCase):
         self.session.db.commit()
         self.assertEqual(self.call('list', actor=None)['sponsors'], [])
 
+    def test_list_attendance_is_current_user_only_without_user_id(self):
+        self.session.db.executescript('''
+        INSERT INTO AttendanceV2 VALUES('admin','admin-event');
+        INSERT INTO AttendanceV2 VALUES('other','other-event');
+        INSERT INTO AttendanceV2 VALUES('other','another-event');
+        ''')
+        self.assertEqual(self.call('list', actor=123)['attendance'],
+                         [{'event_id': 'admin-event'}])
+        self.assertEqual(self.call('list', actor=456, user_id='admin')['attendance'],
+                         [{'event_id': 'another-event'}, {'event_id': 'other-event'}])
+        for actor in (None, 999):
+            self.assertEqual(self.call('list', actor=actor)['attendance'], [])
+        self.call('saveUser', id='other', vkontakte_id=None, name='Other', note='')
+        self.assertEqual(self.call('list', actor=456)['attendance'], [])
+
     def test_unknown_login_does_not_write(self):
         self.assertEqual(self.call('me',actor=999),dict(user_id=None,vkontakte_id='999',name=None,attendee=False,admin=False,expert=False))
         self.assertEqual(self.session.tx.writes,0)
