@@ -40,7 +40,14 @@ export function DataProvider({ children }) {
         }
         setUsers(result.users);
         setEvents(result.events);
-        setExpertProfiles(Array.isArray(result.expert_profiles) ? result.expert_profiles : emptyRows);
+        const enhancedProfiles = enhanceExpertProfiles(
+          Array.isArray(result.expert_profiles)
+            ? result.expert_profiles
+            : emptyRows,
+          result.users,
+        );
+
+        setExpertProfiles(enhancedProfiles);
         setHosts(Array.isArray(result.hosts) ? result.hosts : emptyRows);
         setLoadedRevision(sessionRevision);
       })
@@ -83,4 +90,15 @@ export function useData() {
   if (context === null)
     throw new Error("useData must be used within a DataProvider");
   return context;
+}
+
+function enhanceExpertProfiles(expertProfiles, users) {
+  const usersById = Object.fromEntries(users.map((user) => [user.id, user]));
+  return expertProfiles.map((profile) => {
+    const user = usersById[profile.user_id];
+    return {
+      ...profile,
+      name: user?.name || profile.name || "Неизвестный эксперт",
+    };
+  });
 }

@@ -1,7 +1,6 @@
 import content from "../site.json";
 import React, { useMemo, useState } from "react";
 import { useData } from "../context/DataContext";
-import { expertsById } from "../experts";
 import { useProgramStack } from "../hooks/useProgramStack";
 
 function formatEventTime(startUs, endUs) {
@@ -32,7 +31,7 @@ function groupSessions(items) {
 }
 
 export function Program() {
-  const { events, hosts, loading, dataError } = useData();
+  const { events, hosts, expertProfiles, loading, dataError } = useData();
   const [filter, setFilter] = useState(content.Program.all);
 
   const sessions = useMemo(() => {
@@ -52,7 +51,7 @@ export function Program() {
     return sorted.map((ev) => {
       const hostIds = hostsByEvent.get(ev.id) || [];
       const people = hostIds
-        .map((uid) => expertsById[uid])
+        .map((uid) => expertProfiles.find((p) => p.user_id === uid))
         .filter(Boolean);
 
       return {
@@ -86,7 +85,10 @@ export function Program() {
     [sessions, filter],
   );
 
-  const groups = useMemo(() => groupSessions(visibleSessions), [visibleSessions]);
+  const groups = useMemo(
+    () => groupSessions(visibleSessions),
+    [visibleSessions],
+  );
   const stackRef = useProgramStack(filter);
 
   return (
@@ -95,7 +97,8 @@ export function Program() {
         <div className="section-label">{content.Program.label}</div>
         <div className="section-heading">
           <h2>
-            {content.Program.title}<em>{content.Program.titleEmphasis}</em>
+            {content.Program.title}
+            <em>{content.Program.titleEmphasis}</em>
           </h2>
           <p>{content.Program.description}</p>
         </div>
@@ -181,7 +184,7 @@ function SessionCard({ item, index }) {
           {item.people?.map((person) => (
             <a
               className="session-person"
-              key={person.id}
+              key={person.user_id}
               href={person.profile}
               target="_blank"
               rel="noreferrer"
@@ -199,9 +202,7 @@ function SessionCard({ item, index }) {
         </div>
         <div className="session-meta">
           {item.location && <span>{item.location}</span>}
-          {item.access && (
-            <span className="session-access">{item.access}</span>
-          )}
+          {item.access && <span className="session-access">{item.access}</span>}
         </div>
       </div>
       <span className="session-number">

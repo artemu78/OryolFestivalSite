@@ -1,8 +1,12 @@
+import pkg from "./package.json";
 import content from "./src/site.json";
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
+  define: {
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(pkg.version),
+  },
   base: process.env.PAGES_BASE_PATH || '/',
   plugins: [react(), {
     name: 'site-content',

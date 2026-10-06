@@ -41,6 +41,8 @@ function App() {
   );
 }
 
+console.log(`Version: ${import.meta.env.VITE_APP_VERSION}`);
+
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <AuthProvider>
