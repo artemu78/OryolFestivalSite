@@ -128,14 +128,8 @@ function AdminSession({ auth }) {
   const hasRole = (id, role) => data.roles.some(row => row.user_id === id && row.role === role);
   const linked = (type, id, eid) => data[type].some(row => row.user_id === id && row.event_id === eid);
   const attendees = data?.users.filter(u => hasRole(u.id, 'attendee')) ?? [];
-  const hosts = data?.users.filter(u => hostUserIds.includes(u.id)) ?? [];
+  const hosts = data?.users.filter(u => hostUserIds.includes(u.id) || data.expert_profiles.some(p => p.user_id === u.id)) ?? [];
   const expert = id => data.expert_profiles.find(p => p.user_id === id);
-  async function toggleRole(u, role, enabled) {
-    if (!enabled && !window.confirm(`Снять роль «${role === 'admin' ? 'Администратор' : 'Участник'}» у ${u.name}?${role === 'attendee' ? ' Отметки посещения будут удалены.' : ''}`)) return;
-    const roles = data.roles.filter(r => r.user_id === u.id && r.role !== role).map(r => r.role);
-    if (enabled) roles.push(role);
-    await mutate('saveRoles', { user_id: u.id, roles });
-  }
   const [activeTab, setActiveTab] = useState('attendance');
   const tabListRef = useRef(null);
 
@@ -258,7 +252,7 @@ function AdminSession({ auth }) {
         <fieldset disabled={busy || !data}>
           <legend>Ведущие</legend>
           <p id="hosts-help">Отметьте события, которые ведёт каждый ведущий. Изменения сохраняются автоматически. Снимите отметку, чтобы отменить назначение.</p>
-          {data && (!data.events.length ? <p>Добавьте события для назначения ведущих.</p> : !hosts.length ? <p>Ведущие ещё не назначены. Первое назначение можно добавить в разделе «Пользователи и роли» у пользователя с профилем эксперта.</p> :
+          {data && (!data.events.length ? <p>Добавьте события для назначения ведущих.</p> : !hosts.length ? <p>Создайте профиль эксперта в разделе «Пользователи и роли», чтобы назначить ведущего.</p> :
             <div className="admin-attendance-scroll" role="region" aria-label="Таблица ведущих событий" tabIndex={0}>
               <table className="admin-attendance" aria-describedby="hosts-help">
                 <caption>Ведущие по событиям</caption>
@@ -295,21 +289,17 @@ function AdminSession({ auth }) {
           <form onSubmit={async e => { e.preventDefault(); if (await mutate('saveUser', { ...user, vkontakte_id: user.vkontakte_id || null })) setUser(emptyUser); }}>
             <label>Имя<input ref={nameInput} required maxLength={300} value={user.name} onChange={e => setUser({ ...user, name: e.target.value })}/></label>
             <label>VK ID (необязательно)<input inputMode="numeric" pattern="[1-9][0-9]*" disabled={user.id === user_id || (data && user.id && hasRole(user.id, 'admin'))} value={user.vkontakte_id ?? ''} onChange={e => setUser({ ...user, vkontakte_id: e.target.value })}/></label>
-            {user.id && data && hasRole(user.id, 'admin') && <p>Для изменения VK ID сначала снимите роль администратора. Собственный VK ID изменить нельзя.</p>}
+            {user.id && data && hasRole(user.id, 'admin') && <p>VK ID администратора изменить нельзя.</p>}
             <label>Приватное примечание<textarea maxLength={4000} value={user.note} onChange={e => setUser({ ...user, note: e.target.value })}/></label>
             <button>Сохранить пользователя</button>{user.id && <button type="button" onClick={() => setUser(emptyUser)}>Отмена</button>}
           </form>
           {data?.users.map(u => <article key={u.id}><h3>{u.name}</h3><p>{u.vkontakte_id ? `VK ${u.vkontakte_id}` : 'VK не связан'}{expert(u.id) ? ' · эксперт' : ''}</p><p>{u.note}</p>
-            <div className="admin-relation"><label><input type="checkbox" checked={hasRole(u.id, 'attendee')} onChange={e => toggleRole(u, 'attendee', e.target.checked)}/> Участник</label>
-              <label><input type="checkbox" checked={hasRole(u.id, 'admin')} disabled={u.id === user_id || !u.vkontakte_id} onChange={e => toggleRole(u, 'admin', e.target.checked)}/> Администратор</label></div>
-            {!u.vkontakte_id && <p>Для назначения администратора свяжите VK ID.</p>}
             <button onClick={() => { setUser(u); nameInput.current?.focus(); }}>Изменить пользователя</button> <button disabled={u.id === user_id} onClick={() => { if (window.confirm(`Удалить ${u.name}, профиль эксперта и все связи?`)) mutate('deleteUser', { id: u.id }); }}>Удалить пользователя</button>{' '}
             <button onClick={() => setProfile({ ...(expert(u.id) || emptyProfile), user_id: u.id })}>{expert(u.id) ? 'Изменить профиль эксперта' : 'Создать профиль эксперта'}</button>
-            {expert(u.id) && <><button onClick={() => {
+            {expert(u.id) && <button onClick={() => {
               if (data.hosts.some(h => h.user_id === u.id)) { setError('Сначала снимите все назначения ведущего у этого эксперта.'); return; }
               if (window.confirm(`Удалить профиль эксперта ${u.name}?`)) mutate('deleteExpertProfile', { user_id: u.id });
-            }}>Удалить профиль эксперта</button>
-              {data.events.map(ev => <div className="admin-relation" key={ev.id}><span>{ev.title}</span><label><input type="checkbox" checked={linked('hosts', u.id, ev.id)} onChange={e => mutate('host', { user_id: u.id, event_id: ev.id, enabled: e.target.checked })}/> Ведущий</label></div>)}</>}
+            }}>Удалить профиль эксперта</button>}
           </article>)}
         </fieldset>
         {profile && <fieldset disabled={busy || !data}><legend>Профиль эксперта: {data.users.find(u => u.id === profile.user_id)?.name}</legend><p>Изменения появятся на публичном сайте после экспорта, сборки и публикации.</p>
