@@ -154,7 +154,7 @@ resource "yandex_function" "admin" {
     ALLOWED_ORIGINS       = join(",", concat([for domain in values(var.domains) : "https://${domain}"], ["https://artemu78.github.io"]))
   }
   content { zip_filename = data.archive_file.admin.output_path }
-  depends_on = [yandex_ydb_table.participants, yandex_ydb_table.events, yandex_ydb_table.attendance, yandex_ydb_table.hosts, yandex_ydb_database_iam_member.hello, yandex_ydb_table.users, yandex_ydb_table.vk_identities, yandex_ydb_table.user_roles, yandex_ydb_table.expert_profiles, yandex_ydb_table.attendance_v2, yandex_ydb_table.hosts_v2]
+  depends_on = [yandex_ydb_table.participants, yandex_ydb_table.events, yandex_ydb_table.attendance, yandex_ydb_table.hosts, yandex_ydb_database_iam_member.hello, yandex_ydb_table.users, yandex_ydb_table.vk_identities, yandex_ydb_table.user_roles, yandex_ydb_table.expert_profiles, yandex_ydb_table.attendance_v2, yandex_ydb_table.hosts_v2, yandex_ydb_table.sponsors]
 }
 resource "yandex_function_iam_member" "admin_public" {
   function_id = yandex_function.admin.id

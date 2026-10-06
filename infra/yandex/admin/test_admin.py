@@ -25,6 +25,7 @@ class Session:
         CREATE TABLE Events(id TEXT PRIMARY KEY,title TEXT,description TEXT);
         CREATE TABLE AttendanceV2(user_id TEXT,event_id TEXT,PRIMARY KEY(user_id,event_id));
         CREATE TABLE HostsV2(user_id TEXT,event_id TEXT,PRIMARY KEY(user_id,event_id));
+        CREATE TABLE Sponsors(id TEXT PRIMARY KEY,name TEXT,image TEXT,link TEXT,display BOOLEAN);
         INSERT INTO Users VALUES('admin',123,'Admin','');
         INSERT INTO VkIdentities VALUES(123,'admin');
         INSERT INTO UserRoles VALUES('admin','admin');
@@ -89,16 +90,30 @@ class PolicyTests(unittest.TestCase):
     def table(self, table):
         return [dict(row) for row in self.session.db.execute('SELECT * FROM '+table)]
 
+    def test_public_list_includes_only_visible_sponsors_and_reflects_edits(self):
+        self.session.db.executescript('''
+        INSERT INTO Sponsors VALUES('visible','','logos/anicha.jpg','',true);
+        INSERT INTO Sponsors VALUES('hidden','Hidden','logos/braf.jpg','https://example.com',false);
+        ''')
+        result = self.call('list', actor=None)
+        self.assertEqual(result['sponsors'], [dict(id='visible', name='', image='logos/anicha.jpg', link='', display=1)])
+        self.session.db.execute("UPDATE Sponsors SET name='Sponsor',link='https://example.com' WHERE id='visible'")
+        self.session.db.commit()
+        self.assertEqual(self.call('list', actor=None)['sponsors'][0]['link'], 'https://example.com')
+        self.session.db.execute('UPDATE Sponsors SET display=false')
+        self.session.db.commit()
+        self.assertEqual(self.call('list', actor=None)['sponsors'], [])
+
     def test_unknown_login_does_not_write(self):
         self.assertEqual(self.call('me',actor=999),dict(user_id=None,vkontakte_id='999',name=None,attendee=False,admin=False,expert=False))
         self.assertEqual(self.session.tx.writes,0)
         self.assertEqual(len(self.table('Users')),2)
         listing = self.call('list',actor=999)
-        self.assertEqual(set(listing),{'users','roles','expert_profiles','events','attendance','hosts'})
+        self.assertEqual(set(listing),{'users','roles','expert_profiles','events','attendance','hosts','sponsors'})
 
     def test_unauthenticated_user_can_list_but_not_manage(self):
         listing = self.call('list',actor=None)
-        self.assertEqual(set(listing),{'users','roles','expert_profiles','events','attendance','hosts'})
+        self.assertEqual(set(listing),{'users','roles','expert_profiles','events','attendance','hosts','sponsors'})
         self.denied(401,'me',actor=None)
         for action in ('saveUser','deleteUser','saveRoles','saveExpertProfile','deleteExpertProfile','saveEvent','deleteEvent','attendance','host'):
             self.denied(401,action,actor=None)
@@ -118,7 +133,7 @@ class PolicyTests(unittest.TestCase):
         self.assertEqual(self.call('me',actor=456),dict(user_id='other',vkontakte_id='456',name='Other',attendee=True,admin=True,expert=True))
         listing = self.call('list')
         self.assertEqual(listing['users'][0]['vkontakte_id'],'123')
-        self.assertEqual(set(listing),{'users','roles','expert_profiles','events','attendance','hosts'})
+        self.assertEqual(set(listing),{'users','roles','expert_profiles','events','attendance','hosts','sponsors'})
 
     def test_identity_conflict_and_relink(self):
         self.denied(409,'saveUser',id='other',vkontakte_id='123',name='Other',note='')

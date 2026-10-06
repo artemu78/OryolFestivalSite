@@ -228,3 +228,21 @@ Run this script **before** applying Terraform's column removal: Terraform alone
 does not migrate values. `migrate-program.py` now converts JSON time strings to
 timestamps directly and never recreates the old database column. Static JSON
 and the site's display format remain unchanged.
+
+## Sponsors
+
+`sponsors.tf` adds the protected `Sponsors` table with `id`, `name`, `image`,
+`link` (Utf8) and `display` (Bool). Deploy the table first, then run with the
+operator environment above:
+
+```sh
+python infra/yandex/seed-sponsors.py
+python infra/yandex/seed-sponsors.py --execute
+```
+
+The importer generates stable UUIDs for every image in `public/logos`, sets empty
+name/link and display=true, inserts only missing images, and verifies the entire
+Sponsors result in one transaction. Existing edits and hidden rows survive repeat
+imports. Deploy `festival-admin` after seeding: public `list.sponsors` returns only
+visible rows. Rebuild/publish the frontend once to switch to the dynamic gallery;
+subsequent row edits need only a page refresh. See [editing sponsors](../../docs/editing-sponsors.md).

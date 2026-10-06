@@ -99,6 +99,7 @@ def operation(session, actor, action, body, new_id):
                                      ('events','Events','id'), ('attendance','AttendanceV2','user_id, event_id'),
                                      ('hosts','HostsV2','user_id, event_id')]:
                 result[key] = rows(f'SELECT * FROM {table} ORDER BY {order};')
+            result['sponsors'] = rows('SELECT id, name, image, link, display FROM Sponsors WHERE display = true ORDER BY image, id;')
             for row in result['users']:
                 if row['vkontakte_id'] is not None:
                     row['vkontakte_id'] = str(row['vkontakte_id'])

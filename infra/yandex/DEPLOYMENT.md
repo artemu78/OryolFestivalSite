@@ -129,3 +129,25 @@ without recreating time. Repeat migration reports already migrated. Targeted
 Events Terraform plan reports no changes. All 24 migration/public-export tests,
 17 admin tests, public content validation, site build and whitespace/formatting
 checks passed. No site deployment, commit or push was performed.
+
+## Sponsors migration — 6 October 2026
+
+Added the protected five-column Sponsors table (`id`, `name`, `image`, `link`,
+`display`). Imported all 28 images from public/logos, including the three festival
+emblems, with stable generated UUIDs, empty name/link and display=true. Transactional
+read-back passed; repeat execution reported existing=28, added=0. Public festival-admin
+list response was verified to contain exactly these 28 images and initial values;
+existing response arrays remain present. The function filters display=true in SQL.
+The frontend now reads list.sponsors; src/sponsors.json was removed.
+
+Applied reviewed scoped plans: one table creation, one in-place function update,
+and replacement of generated JS/CSS plus index.html in both website buckets.
+No DNS, certificate, permission or existing-table changes were planned or applied.
+The latin HTTPS site returned the new build and logo files. The Cyrillic custom
+HTTPS endpoint reset the verification connection; this is not a successful HTTPS
+check. The Cyrillic bucket was verified directly through the standard Object Storage
+HTTPS endpoint: new index, script and logo files are present. The latin production
+gallery loaded all 28 images in the browser. GitHub Pages was not republished in
+this task. Local desktop/mobile gallery,
+22 Python tests, sponsor rendering checks, root and Pages builds, Terraform validation
+and diff whitespace checks passed. See docs/editing-sponsors.md for management.

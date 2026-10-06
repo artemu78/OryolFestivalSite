@@ -11,6 +11,7 @@ export function DataProvider({ children }) {
   const [users, setUsers] = useState([]);
   const [expertProfiles, setExpertProfiles] = useState([]);
   const [hosts, setHosts] = useState([]);
+  const [sponsors, setSponsors] = useState([]);
   const [dataError, setDataError] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadedRevision, setLoadedRevision] = useState(null);
@@ -21,6 +22,7 @@ export function DataProvider({ children }) {
     setEvents([]);
     setExpertProfiles([]);
     setHosts([]);
+    setSponsors([]);
     setLoadedRevision(null);
     setDataError("");
     setLoading(true);
@@ -31,7 +33,7 @@ export function DataProvider({ children }) {
         ? sessionRevision === 0
         : isCurrentSession(access_token, sessionRevision));
 
-    // The list action reads public Events, Users, ExpertProfiles and Hosts from YDB.
+    // The list action also reads visible Sponsors from YDB.
     adminRequest(access_token, "list")
       .then((result) => {
         if (!current()) return;
@@ -49,6 +51,7 @@ export function DataProvider({ children }) {
 
         setExpertProfiles(enhancedProfiles);
         setHosts(Array.isArray(result.hosts) ? result.hosts : emptyRows);
+        setSponsors(Array.isArray(result.sponsors) ? result.sponsors : emptyRows);
         setLoadedRevision(sessionRevision);
       })
       .catch((error) => {
@@ -76,10 +79,11 @@ export function DataProvider({ children }) {
       setExpertProfiles,
       hosts: hasCurrentData ? hosts : emptyRows,
       setHosts,
+      sponsors: hasCurrentData ? sponsors : emptyRows,
       loading,
       dataError,
     }),
-    [hasCurrentData, users, events, expertProfiles, hosts, loading, dataError],
+    [hasCurrentData, users, events, expertProfiles, hosts, sponsors, loading, dataError],
   );
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
