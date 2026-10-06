@@ -1,7 +1,6 @@
 import content from "../site.json";
 import React, { useEffect, useRef, useState } from "react";
 import "./Header.css";
-import { Flower } from "./Flower";
 import { useAuth } from "../context/AuthContext";
 
 const defaultCommunity = content.links.community;
@@ -220,11 +219,13 @@ export function Header({ community = defaultCommunity }) {
         href="#"
         aria-label={content.Header.homeLabel}
       >
-        <Flower />
-        <span>
-          {content.Header.brand}<br />
-          {content.Header.brandSecond}<span className="brand-city">{content.Header.city}</span>
-        </span>
+        <img
+          className="brand-logo"
+          src={`${import.meta.env.BASE_URL}logos/main_logo.jpg`}
+          alt=""
+          width="2048"
+          height="2048"
+        />
       </a>
       <button
         className="menu-toggle"

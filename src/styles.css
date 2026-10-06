@@ -54,26 +54,16 @@ a:focus-visible {
   align-items: center;
   padding-top: 27px;
   padding-bottom: 27px;
-  border-bottom: 1px solid var(--line);
 }
 .brand {
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: calc(12px * var(--font-scale));
-  font-weight: 600;
-  line-height: 1.4;
+  flex-shrink: 0;
 }
-.brand svg {
-  width: 43px;
-  height: 43px;
-}
-.brand-city {
+.brand-logo {
   display: block;
-  font-size: calc(8px * var(--font-scale));
-  letter-spacing: 2px;
-  margin-top: 5px;
-  color: var(--muted);
+  width: 100px;
+  height: auto;
 }
 .nav {
   --nav-control-height: calc(1.5em + 26px);
@@ -768,15 +758,8 @@ h2 em {
     padding-bottom: 20px;
     position: relative;
   }
-  .brand {
-    font-size: calc(10px * var(--font-scale));
-  }
-  .brand svg {
-    width: 35px;
-    height: 35px;
-  }
-  .brand-city {
-    font-size: calc(7px * var(--font-scale));
+  .brand-logo {
+    width: 80px;
   }
   .menu-toggle {
     display: block;
