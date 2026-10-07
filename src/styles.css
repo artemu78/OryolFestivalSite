@@ -148,6 +148,22 @@ h1 em {
   font-size: calc(19px * var(--font-scale));
   line-height: 1.5;
 }
+.hero-charity {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #edf3e8;
+  border: 1px solid #a8bca7;
+  border-radius: 30px;
+  padding: 10px 22px;
+  font-size: calc(16px * var(--font-scale));
+  font-weight: 600;
+  color: var(--green);
+  line-height: 1.4;
+  margin-top: 14px;
+  max-width: 100%;
+}
 .hero-description {
   font-size: calc(13px * var(--font-scale));
   line-height: 1.8;
@@ -806,6 +822,11 @@ h2 em {
   }
   .hero-subtitle {
     font-size: calc(17px * var(--font-scale));
+  }
+  .hero-charity {
+    font-size: calc(14px * var(--font-scale));
+    padding: 8px 16px;
+    margin-top: 12px;
   }
   .hero-description {
     font-size: calc(12px * var(--font-scale));

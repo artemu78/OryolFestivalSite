@@ -19,6 +19,9 @@ export function Hero() {
           <br />
           {content.Hero.subtitleSecond}
         </p>
+        <div className="hero-charity">
+          {content.Hero.charityNotice}
+        </div>
         <p className="hero-description">
           {content.Hero.description}
           <br className="desktop-break" />{content.Hero.descriptionSecond}

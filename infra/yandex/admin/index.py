@@ -254,7 +254,7 @@ def operation(session, actor, action, body, new_id):
                 sid = text(body.get('id', new_id), 100, True)
                 if action == 'deleteSponsor':
                     if not rows('SELECT id FROM Sponsors WHERE id=$sid;', sid=sid):
-                        raise ApiError(404, 'Спонсор удалён')
+                        raise ApiError(404, 'Партнёр удалён')
                     run('DELETE FROM Sponsors WHERE id=$sid;', sid=sid)
                 else:
                     name = text(body.get('name', ''), 300)
@@ -263,7 +263,7 @@ def operation(session, actor, action, body, new_id):
                         raise ApiError(400, 'Проверьте путь к логотипу (logos/...) или URL изображения')
                     link = text(body.get('link', ''), 1000)
                     if link and not valid_sponsor_link(link):
-                        raise ApiError(400, 'Проверьте ссылку спонсора (HTTPS или HTTP)')
+                        raise ApiError(400, 'Проверьте ссылку партнёра (HTTPS или HTTP)')
                     display = body.get('display')
                     if display is None:
                         display = True
