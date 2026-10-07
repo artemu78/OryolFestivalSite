@@ -1,9 +1,27 @@
 import content from "../site.json";
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 const venue = content.venue;
 
 export function Venue() {
+  const mapRef = useRef(null);
+  const [loadMap, setLoadMap] = useState(false);
+
+  useEffect(() => {
+    if (!("IntersectionObserver" in window)) {
+      setLoadMap(true); // Native iframe lazy loading remains the fallback.
+      return;
+    }
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        setLoadMap(true);
+        observer.disconnect();
+      }
+    }, { rootMargin: "300px 0px" });
+    observer.observe(mapRef.current);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <section id="location" className="venue section wrap">
       <div className="section-label">{content.Venue.label}</div>
@@ -38,7 +56,10 @@ export function Venue() {
           </div>
         </div>
         <iframe
-          src="https://yandex.ru/map-widget/v1/?um=constructor%3Ad9b0866f6fc55a63242665dd7cd776c346beb9b7bf3dc7fc423909b9b01ccf74&amp;source=constructor"
+          ref={mapRef}
+          src={loadMap ? "https://yandex.ru/map-widget/v1/?um=constructor%3Ad9b0866f6fc55a63242665dd7cd776c346beb9b7bf3dc7fc423909b9b01ccf74&source=constructor" : undefined}
+          loading="lazy"
+          title={content.Venue.mapTitle}
           width="640"
           height="480"
           frameBorder="0"
