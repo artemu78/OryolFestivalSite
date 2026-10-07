@@ -11,7 +11,7 @@ import { ParticipantWelcome } from "./components/ParticipantWelcome";
 
 const community = content.links.community;
 // Fill after agreeing the studio contact with the owner. No invented contact URL.
-const studioContact = "";
+const studioContact = "https://reva-studio.online/";
 
 function App() {
   const { access_token: accessKey } = useAuth();
