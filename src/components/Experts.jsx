@@ -26,7 +26,7 @@ export function Experts() {
                 className="expert-photo-link"
                 href={expert.profile}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener"
                 aria-label={content.Experts.profileLabel.replace(
                   "{name}",
                   expert.name,
@@ -41,7 +41,7 @@ export function Experts() {
               </a>
             </div>
             <h3>
-              <a href={expert.profile_url} target="_blank" rel="noreferrer">
+              <a href={expert.profile_url} target="_blank" rel="noopener">
                 {expert.name} ↗
               </a>
             </h3>

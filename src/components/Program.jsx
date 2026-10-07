@@ -199,7 +199,7 @@ function SessionCard({ item, index, attended }) {
               key={person.user_id}
               href={person.profile}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener"
             >
               <img
                 src={assetUrl(person.photo)}

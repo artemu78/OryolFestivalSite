@@ -1,11 +1,8 @@
-import { assetUrl } from '../assetUrl';
+import { assetUrl } from "../assetUrl";
 import content from "../site.json";
 import React, { useState, useRef, useEffect } from "react";
 
 export function HeroMedia() {
-  const videoRef = useRef(null);
-  const [started, setStarted] = useState(false);
-  const [playing, setPlaying] = useState(false);
   const [isMobile, setIsMobile] = useState(() => {
     if (typeof window === "undefined") return false;
     return window.matchMedia("(max-width: 700px)").matches;
@@ -18,10 +15,58 @@ export function HeroMedia() {
     return () => mql.removeEventListener("change", onChange);
   }, []);
 
-  const poster = assetUrl('girls/1001.png');
-  const mobilePoster = assetUrl('girls/1001-mobile.png');
-  const desktopVideo = assetUrl('girls/gemini_generated_video_4ba23423.mp4');
-  const mobileVideo = assetUrl('girls/gemini_generated_video_mobile.mp4');
+  return (
+    <DeferredHeroMedia
+      key={isMobile ? "mobile" : "desktop"}
+      isMobile={isMobile}
+    />
+  );
+}
+
+function DeferredHeroMedia({ isMobile }) {
+  const posterRef = useRef(null);
+  const videoRef = useRef(null);
+  const [videoReady, setVideoReady] = useState(false);
+  const [started, setStarted] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const poster = assetUrl(
+    isMobile ? "girls/1001-mobile.jpg" : "girls/1001.jpg",
+  );
+  const videoSource = assetUrl(
+    isMobile
+      ? "girls/gemini_generated_video_mobile.mp4"
+      : "girls/gemini_generated_video_4ba23423.mp4",
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    let decoded = false;
+    let frame;
+    const startAfterPaint = () => {
+      if (cancelled || !decoded || document.readyState !== "complete") return;
+      // Give the decoded poster a paint opportunity before attaching any video URL.
+      frame = requestAnimationFrame(() => {
+        frame = requestAnimationFrame(() => {
+          if (!cancelled) setVideoReady(true);
+        });
+      });
+    };
+    window.addEventListener("load", startAfterPaint, { once: true });
+    posterRef.current
+      .decode()
+      .catch(() => {
+        // A broken poster must not prevent the video from loading.
+      })
+      .then(() => {
+        decoded = true;
+        startAfterPaint();
+      });
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frame);
+      window.removeEventListener("load", startAfterPaint);
+    };
+  }, []);
 
   function togglePlayback() {
     const video = videoRef.current;
@@ -36,21 +81,23 @@ export function HeroMedia() {
   return (
     <>
       <div className="hero-media" aria-hidden="true">
-        <picture>
-          <source media="(max-width: 700px)" srcSet={mobilePoster} />
-          <img className="hero-poster" src={poster} alt="" fetchPriority="high" />
-        </picture>
+        <img
+          ref={posterRef}
+          className="hero-poster"
+          src={poster}
+          alt=""
+          fetchPriority="high"
+        />
         <video
-          key={isMobile ? "mobile" : "desktop"}
           ref={videoRef}
           className={`hero-video${started ? " is-playing" : ""}`}
-          src={isMobile ? mobileVideo : desktopVideo}
-          poster={isMobile ? mobilePoster : poster}
+          src={videoReady ? videoSource : undefined}
+          poster={poster}
           autoPlay
           muted
           loop
           playsInline
-          preload="auto"
+          preload="none"
           onPlaying={() => {
             setStarted(true);
             setPlaying(true);
