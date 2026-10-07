@@ -1,4 +1,4 @@
-import { assetUrl } from '../assetUrl';
+import { imageUrl } from '../imageUrl';
 import content from "../site.json";
 import React from "react";
 import { useData } from "../context/DataContext";
@@ -34,7 +34,7 @@ export function Experts() {
               >
                 <img
                   className="expert-photo"
-                  src={assetUrl(expert.photo)}
+                  src={imageUrl(expert.photo, 'portrait')}
                   alt={expert.name}
                   loading="lazy"
                 />

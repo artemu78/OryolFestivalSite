@@ -4,10 +4,13 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { publicAssetVersions } from "./scripts/public-asset-versions.js";
 import { fileURLToPath } from "node:url";
+import imageVariants from "./public/optimized-images/manifest.json";
 
 const assetVersions = publicAssetVersions(
   fileURLToPath(new URL("./public", import.meta.url)),
 );
+const brandImage = imageVariants['logos/main_logo.jpg'].brand.path;
+let resolvedBase;
 
 export default defineConfig({
   define: {
@@ -19,6 +22,9 @@ export default defineConfig({
     react(),
     {
       name: "site-content",
+      configResolved(config) {
+        resolvedBase = config.base;
+      },
       transformIndexHtml(html) {
         const escape = (value) =>
           value
@@ -34,7 +40,7 @@ export default defineConfig({
             "%MOBILE_POSTER_HASH%",
             assetVersions["girls/1001-mobile.jpg"],
           )
-          .replace("%MAIN_LOGO_HASH%", assetVersions["logos/main_logo.jpg"])
+          .replace("%MAIN_LOGO_URL%", `${resolvedBase}${brandImage}?v=${assetVersions[brandImage]}`)
           .replace(
             'favicon.svg"',
             `favicon.svg?v=${assetVersions["favicon.svg"]}"`,

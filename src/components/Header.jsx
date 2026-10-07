@@ -1,4 +1,4 @@
-import { assetUrl } from '../assetUrl';
+import { imageUrl } from '../imageUrl';
 import content from "../site.json";
 import React, { useEffect, useRef, useState } from "react";
 import "./Header.css";
@@ -222,7 +222,7 @@ export function Header({ community = defaultCommunity }) {
       >
         <img
           className="brand-logo"
-          src={assetUrl('logos/main_logo.jpg')}
+          src={imageUrl('logos/main_logo.jpg', 'brand')}
           alt=""
           width="2048"
           height="2048"

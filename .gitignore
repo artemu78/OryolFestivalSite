@@ -1,5 +1,6 @@
 node_modules/
 dist/
+public/optimized-images/
 .DS_Store
 
 # Local cloud credentials, Terraform state, plans, and function packages.

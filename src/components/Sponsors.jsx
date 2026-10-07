@@ -1,4 +1,4 @@
-import { assetUrl } from '../assetUrl';
+import { imageUrl as optimizedImageUrl } from '../imageUrl';
 import React from "react";
 import content from "../site.json";
 import { useData } from "../context/DataContext";
@@ -17,7 +17,7 @@ export function imageUrl(value) {
   const remote = webUrl(value);
   if (remote) return remote;
   if (typeof value !== "string" || !/^logos\/[\w.-]+\.(?:png|jpe?g|webp|svg)$/i.test(value)) return null;
-  return assetUrl(value);
+  return optimizedImageUrl(value, 'logo');
 }
 
 export function Sponsors() {
