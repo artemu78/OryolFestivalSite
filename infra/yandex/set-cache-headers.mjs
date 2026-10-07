@@ -24,7 +24,11 @@ async function request(url, options = {}) {
     let failure;
     let retryable;
     try {
-      const response = await fetch(url, { ...options, redirect: 'error', signal: AbortSignal.timeout(60000) });
+      const headers = {
+        'Connection': 'close',
+        ...(options.headers || {}),
+      };
+      const response = await fetch(url, { ...options, headers, redirect: 'error', signal: AbortSignal.timeout(10000) });
       // Consume the body within the retry boundary: a connection can fail after headers.
       const body = await response.text();
       if (response.ok) return { headers: response.headers, body };
