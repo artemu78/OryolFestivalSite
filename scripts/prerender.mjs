@@ -15,7 +15,7 @@ initialData.expertProfiles = enchancedProfiles;
 
 const template = await readFile("dist/index.html", "utf8");
 const html = await render(initialData);
-const dataMarker = "<!--data-html-->";
+const dataMarker = '{ "app": "data" }';
 const appMarker = "<!--app-html-->";
 
 for (const marker of [appMarker, dataMarker]) {

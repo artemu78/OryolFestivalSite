@@ -62,13 +62,6 @@ export function DataProvider({ children, initialData }) {
       .catch((error) => {
         if (current()) {
           setDataError(error.message || "Не удалось загрузить данные");
-          setUsers([]);
-          setEvents([]);
-          setExpertProfiles([]);
-          setHosts([]);
-          setAttendance([]);
-          setSponsors([]);
-          setLoadedRevision(null);
         }
       })
       .finally(() => {

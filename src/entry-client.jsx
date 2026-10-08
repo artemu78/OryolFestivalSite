@@ -3,12 +3,13 @@ import { createRoot, hydrateRoot } from "react-dom/client";
 import { Root } from "./Root";
 import "./styles.css";
 
-const container = document.getElementById("root");
-const tree = <Root initialData={initialData} />;
+console.log(`Version: ${import.meta.env.VITE_APP_VERSION}`);
 
+const container = document.getElementById("root");
 const initialData = JSON.parse(
   document.getElementById("initial-data").textContent,
 );
+const tree = <Root initialData={initialData} />;
 
 if (import.meta.env.DEV) {
   createRoot(container).render(tree);

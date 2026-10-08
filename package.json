@@ -1,11 +1,11 @@
 {
   "name": "orel-mental-health-festival",
   "private": true,
-  "version": "0.7.0",
+  "version": "0.8.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node scripts/fetch-public-snapshot.mjs && npm run build:client && npm run build:server && node scripts/prerender.mjs",
     "build:client": "vite build",
     "build:server": "vite build --ssr src/entry-server.jsx --outDir .prerender/server",
     "preview": "vite preview",
