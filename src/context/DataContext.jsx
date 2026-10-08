@@ -5,28 +5,22 @@ import { useAuth } from "./AuthContext";
 export const DataContext = createContext(null);
 const emptyRows = [];
 
-export function DataProvider({ children }) {
+export function DataProvider({ children, initialData }) {
   const { access_token, sessionRevision, isCurrentSession } = useAuth();
-  const [events, setEvents] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [expertProfiles, setExpertProfiles] = useState([]);
-  const [hosts, setHosts] = useState([]);
-  const [attendance, setAttendance] = useState([]);
-  const [sponsors, setSponsors] = useState([]);
+  const [events, setEvents] = useState(initialData?.events ?? []);
+  const [users, setUsers] = useState(initialData?.users ?? []);
+  const [expertProfiles, setExpertProfiles] = useState(
+    initialData?.expertProfiles ?? [],
+  );
+  const [hosts, setHosts] = useState(initialData?.hosts ?? []);
+  const [attendance, setAttendance] = useState(initialData?.attendance ?? []);
+  const [sponsors, setSponsors] = useState(initialData?.sponsors ?? []);
   const [dataError, setDataError] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadedRevision, setLoadedRevision] = useState(null);
 
   useEffect(() => {
     let active = true;
-    setUsers([]);
-    setEvents([]);
-    setExpertProfiles([]);
-    setHosts([]);
-    setAttendance([]);
-    setSponsors([]);
-    setLoadedRevision(null);
-    setDataError("");
     setLoading(true);
 
     const current = () =>
@@ -53,11 +47,23 @@ export function DataProvider({ children }) {
 
         setExpertProfiles(enhancedProfiles);
         setHosts(Array.isArray(result.hosts) ? result.hosts : emptyRows);
-        setAttendance(Array.isArray(result.attendance) ? result.attendance : emptyRows);
-        setSponsors(Array.isArray(result.sponsors) ? result.sponsors : emptyRows);
+        setAttendance(
+          Array.isArray(result.attendance) ? result.attendance : emptyRows,
+        );
+        setSponsors(
+          Array.isArray(result.sponsors) ? result.sponsors : emptyRows,
+        );
         setLoadedRevision(sessionRevision);
+        setDataError("");
       })
       .catch((error) => {
+        setUsers([]);
+        setEvents([]);
+        setExpertProfiles([]);
+        setHosts([]);
+        setAttendance([]);
+        setSponsors([]);
+        setLoadedRevision(null);
         if (current())
           setDataError(error.message || "Не удалось загрузить данные");
       })
@@ -87,7 +93,17 @@ export function DataProvider({ children }) {
       loading,
       dataError,
     }),
-    [hasCurrentData, users, events, expertProfiles, hosts, attendance, sponsors, loading, dataError],
+    [
+      hasCurrentData,
+      users,
+      events,
+      expertProfiles,
+      hosts,
+      attendance,
+      sponsors,
+      loading,
+      dataError,
+    ],
   );
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

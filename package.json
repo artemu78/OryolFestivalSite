@@ -1,11 +1,12 @@
 {
   "name": "orel-mental-health-festival",
   "private": true,
-  "version": "0.6.4",
+  "version": "0.7.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build:client": "vite build",
+    "build:server": "vite build --ssr src/entry-server.jsx --outDir .prerender/server",
     "preview": "vite preview",
     "deploy:yandex": "PAGES_BASE_PATH=/ npm run build && if [ -z \"$YC_TOKEN\" ] && [ -z \"$YC_SERVICE_ACCOUNT_KEY_FILE\" ]; then export YC_SERVICE_ACCOUNT_KEY_FILE=\"$PWD/infra/yandex/authorized_key.json\"; fi && terraform -chdir=infra/yandex apply",
     "images:optimize": "node scripts/optimize-images.mjs",

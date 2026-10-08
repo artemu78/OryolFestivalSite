@@ -34,11 +34,7 @@
       media="(width <= 700px)"
       fetchpriority="high"
     />
-    <link
-      rel="preload"
-      as="image"
-      href="%MAIN_LOGO_URL%"
-    />
+    <link rel="preload" as="image" href="%MAIN_LOGO_URL%" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <!-- Yandex.Metrika counter -->
     <script type="text/javascript">
@@ -89,7 +85,10 @@
           alt=""
         /></div
     ></noscript>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <div id="root"><!--app-html--></div>
+    <script id="initial-data" type="application/json">
+      null
+    </script>
+    <script type="module" src="/src/entry-client.jsx"></script>
   </body>
 </html>

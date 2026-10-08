@@ -14,4 +14,5 @@ infra/yandex/crash.log
 infra/yandex/crash.*.log
 **/__pycache__/
 infra/yandex/authorized_key.json
-explanation/
+explanations/
+.prerender
