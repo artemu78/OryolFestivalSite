@@ -17,7 +17,10 @@ export function DataProvider({ children, initialData }) {
   const [sponsors, setSponsors] = useState(initialData?.sponsors ?? []);
   const [dataError, setDataError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [loadedRevision, setLoadedRevision] = useState(null);
+  // The prerender snapshot belongs only to the initial anonymous session.
+  const [loadedRevision, setLoadedRevision] = useState(
+    initialData != null ? 0 : null,
+  );
 
   useEffect(() => {
     let active = true;
@@ -57,15 +60,16 @@ export function DataProvider({ children, initialData }) {
         setDataError("");
       })
       .catch((error) => {
-        setUsers([]);
-        setEvents([]);
-        setExpertProfiles([]);
-        setHosts([]);
-        setAttendance([]);
-        setSponsors([]);
-        setLoadedRevision(null);
-        if (current())
+        if (current()) {
           setDataError(error.message || "Не удалось загрузить данные");
+          setUsers([]);
+          setEvents([]);
+          setExpertProfiles([]);
+          setHosts([]);
+          setAttendance([]);
+          setSponsors([]);
+          setLoadedRevision(null);
+        }
       })
       .finally(() => {
         if (current()) setLoading(false);

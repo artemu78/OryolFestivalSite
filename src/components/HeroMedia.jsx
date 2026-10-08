@@ -3,30 +3,19 @@ import content from "../site.json";
 import React, { useState, useRef, useEffect } from "react";
 
 export function HeroMedia() {
-  const [isMobile, setIsMobile] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return window.matchMedia("(max-width: 700px)").matches;
-  });
+  const [isMobile, setIsMobile] = useState(null);
 
   useEffect(() => {
     const mql = window.matchMedia("(max-width: 700px)");
+    setIsMobile(mql.matches);
     const onChange = (e) => setIsMobile(e.matches);
     mql.addEventListener("change", onChange);
     return () => mql.removeEventListener("change", onChange);
   }, []);
 
-  return (
-    <DeferredHeroMedia
-      key={isMobile ? "mobile" : "desktop"}
-      isMobile={isMobile}
-    />
-  );
-}
-
-function DeferredHeroMedia({ isMobile }) {
   const posterRef = useRef(null);
   const videoRef = useRef(null);
-  const [videoReady, setVideoReady] = useState(false);
+  const [readyVariant, setReadyVariant] = useState(null);
   const [started, setStarted] = useState(false);
   const [playing, setPlaying] = useState(false);
   const poster = assetUrl(
@@ -39,6 +28,10 @@ function DeferredHeroMedia({ isMobile }) {
   );
 
   useEffect(() => {
+    if (isMobile === null) return;
+    setStarted(false);
+    setPlaying(false);
+    setReadyVariant(null);
     let cancelled = false;
     let decoded = false;
     let frame;
@@ -47,7 +40,7 @@ function DeferredHeroMedia({ isMobile }) {
       // Give the decoded poster a paint opportunity before attaching any video URL.
       frame = requestAnimationFrame(() => {
         frame = requestAnimationFrame(() => {
-          if (!cancelled) setVideoReady(true);
+          if (!cancelled) setReadyVariant(isMobile);
         });
       });
     };
@@ -66,7 +59,7 @@ function DeferredHeroMedia({ isMobile }) {
       cancelAnimationFrame(frame);
       window.removeEventListener("load", startAfterPaint);
     };
-  }, []);
+  }, [isMobile]);
 
   function togglePlayback() {
     const video = videoRef.current;
@@ -81,33 +74,42 @@ function DeferredHeroMedia({ isMobile }) {
   return (
     <>
       <div className="hero-media" aria-hidden="true">
-        <img
-          ref={posterRef}
-          className="hero-poster"
-          src={poster}
-          alt=""
-          fetchPriority="high"
-        />
-        <video
-          ref={videoRef}
-          className={`hero-video${started ? " is-playing" : ""}`}
-          src={videoReady ? videoSource : undefined}
-          poster={poster}
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="none"
-          onPlaying={() => {
-            setStarted(true);
-            setPlaying(true);
-          }}
-          onPause={() => setPlaying(false)}
-          onError={() => {
-            setStarted(false);
-            setPlaying(false);
-          }}
-        />
+        <picture>
+          <source
+            media="(max-width: 700px)"
+            srcSet={assetUrl("girls/1001-mobile.jpg")}
+          />
+          <img
+            ref={posterRef}
+            className="hero-poster"
+            src={assetUrl("girls/1001.jpg")}
+            alt=""
+            fetchPriority="high"
+          />
+        </picture>
+        {isMobile !== null && readyVariant === isMobile && (
+          <video
+            key={isMobile ? "mobile" : "desktop"}
+            ref={videoRef}
+            className={`hero-video${started ? " is-playing" : ""}`}
+            src={videoSource}
+            poster={poster}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="none"
+            onPlaying={() => {
+              setStarted(true);
+              setPlaying(true);
+            }}
+            onPause={() => setPlaying(false)}
+            onError={() => {
+              setStarted(false);
+              setPlaying(false);
+            }}
+          />
+        )}
       </div>
       {started && (
         <button

@@ -1,5 +1,4 @@
-import content from "./site.json";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
 import { AuthProvider } from "./context/AuthContext";

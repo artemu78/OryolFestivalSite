@@ -32,7 +32,8 @@ export function Sponsors() {
       </div>
       {loading ? <p role="status">{content.Sponsors.loading}</p> :
         dataError ? <p role="alert">{content.Sponsors.error}</p> :
-        visibleSponsors.length === 0 ? <p>{content.Sponsors.empty}</p> : (
+        visibleSponsors.length === 0 ? <p>{content.Sponsors.empty}</p> : null}
+      {visibleSponsors.length > 0 && (
           <ul className="sponsor-grid">
             {visibleSponsors.map(({ id, name, image, link }) => {
               const href = webUrl(link);

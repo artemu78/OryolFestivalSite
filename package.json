@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "build": "vite build",
     "build:client": "vite build",
     "build:server": "vite build --ssr src/entry-server.jsx --outDir .prerender/server",
     "preview": "vite preview",
