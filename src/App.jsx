@@ -1,7 +1,8 @@
 import content from "./site.json";
 import React, { useEffect, useState } from "react";
 import { useAuth } from "./context/AuthContext";
-import { Admin, AdminAccess } from "./components/Admin";
+import { AdminAccess } from "./components/AdminAccess";
+import { AdminRoute } from "./components/AdminRoute";
 import { Header, Main, Footer } from "./components";
 import { ParticipantWelcome } from "./components/ParticipantWelcome";
 
@@ -27,7 +28,7 @@ export function App() {
       <Header community={community} />
       <AdminAccess />
       {adminPage ? (
-        <Admin key={accessKey} />
+        <AdminRoute key={accessKey} />
       ) : (
         <>
           <ParticipantWelcome />

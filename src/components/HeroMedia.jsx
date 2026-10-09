@@ -18,7 +18,7 @@ export function HeroMedia() {
   const [readyVariant, setReadyVariant] = useState(null);
   const [started, setStarted] = useState(false);
   const [playing, setPlaying] = useState(false);
-  const poster = assetUrl(
+  const poster = posterRef.current?.currentSrc || assetUrl(
     isMobile ? "girls/1001-mobile.jpg" : "girls/1001.jpg",
   );
   const videoSource = assetUrl(
@@ -75,6 +75,16 @@ export function HeroMedia() {
     <>
       <div className="hero-media" aria-hidden="true">
         <picture>
+          <source
+            media="(max-width: 700px)"
+            type="image/webp"
+            srcSet={assetUrl("girls/1001-mobile.webp")}
+          />
+          <source
+            media="(width > 700px)"
+            type="image/webp"
+            srcSet={assetUrl("girls/1001.webp")}
+          />
           <source
             media="(max-width: 700px)"
             srcSet={assetUrl("girls/1001-mobile.jpg")}

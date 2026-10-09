@@ -16,3 +16,14 @@ When replacing a font, update its filename, CSS URL and matching HTML preload
 together. Keep the preload URL identical to the CSS URL after base-path expansion.
 Vite rewrites the CSS public-asset paths for the configured deployment base;
 HTML preloads use `%BASE_URL%`.
+
+## Latin weight-range optimization
+
+Original Latin fonts are retained in `scripts/font-sources/` (not served).
+The upstream Golos font contains weights 400–900 and Manrope 200–800;
+`src/fonts.css` uses 400–700 and 400–800 respectively. The maintenance script
+`python scripts/optimize-fonts.py` trims only unused weight ranges. Every
+Unicode mapping and shaping table is retained, including dynamic/admin text.
+Install `fonttools==4.66.1 brotli==1.2.0` in a temporary Python environment
+to regenerate; ordinary development/builds need no Python or font tools.
+Licenses above also apply to the originals. Generated names retain SHA-256 hashes.

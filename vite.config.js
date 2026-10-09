@@ -35,10 +35,10 @@ export default defineConfig({
         return html
           .replace("%SITE_TITLE%", escape(content.metadata.title))
           .replace("%SITE_DESCRIPTION%", escape(content.metadata.description))
-          .replace("%DESKTOP_POSTER_HASH%", assetVersions["girls/1001.jpg"])
+          .replace("%DESKTOP_POSTER_HASH%", assetVersions["girls/1001.webp"])
           .replace(
             "%MOBILE_POSTER_HASH%",
-            assetVersions["girls/1001-mobile.jpg"],
+            assetVersions["girls/1001-mobile.webp"],
           )
           .replace("%MAIN_LOGO_URL%", `${resolvedBase}${brandImage}?v=${assetVersions[brandImage]}`)
           .replace(

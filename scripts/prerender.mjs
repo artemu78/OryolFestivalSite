@@ -1,4 +1,5 @@
 import { readFile, writeFile } from "node:fs/promises";
+import { resolve, sep } from "node:path";
 import { render } from "../.prerender/server/entry-server.js";
 
 const initialData = JSON.parse(
@@ -13,7 +14,28 @@ const enchancedProfiles = enhanceExpertProfiles(
 );
 initialData.expertProfiles = enchancedProfiles;
 
-const template = await readFile("dist/index.html", "utf8");
+let template = await readFile("dist/index.html", "utf8");
+// The complete initial stylesheet is small after compression. Keep it in the
+// HTML so every prerendered section is styled before paint, including without
+// JavaScript. Lazy-loaded stylesheets remain separate Vite assets.
+const base = process.env.PAGES_BASE_PATH || "/";
+const distDirectory = resolve("dist");
+for (const match of template.matchAll(/<link\b[^>]*\brel="stylesheet"[^>]*>/g)) {
+  const href = match[0].match(/\bhref="([^"]+)"/)?.[1];
+  if (!href?.startsWith(base)) {
+    throw new Error(`Unexpected initial stylesheet URL: ${href}`);
+  }
+  const cssPath = resolve(distDirectory, href.slice(base.length));
+  if (!cssPath.startsWith(`${distDirectory}${sep}`)) {
+    throw new Error(`Stylesheet must be inside dist: ${href}`);
+  }
+  const css = await readFile(cssPath, "utf8");
+  if (/<\/style/i.test(css)) {
+    throw new Error(`Unsafe inline stylesheet content: ${href}`);
+  }
+  // Vite has already rewritten font and image URLs for the configured base.
+  template = template.replace(match[0], () => `<style>${css}</style>`);
+}
 const html = await render(initialData);
 const dataMarker = '{ "app": "data" }';
 const appMarker = "<!--app-html-->";

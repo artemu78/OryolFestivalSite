@@ -10,6 +10,14 @@ export async function optimizeImages(publicDirectory) {
   await mkdir(outputDirectory, { recursive: true });
   const manifest = {};
   const outputs = new Set(['manifest.json']);
+  // Same dimensions/crop as the JPEG fallback, used by matched hero preloads.
+  const girlFiles = await readdir(join(publicDirectory, 'girls'));
+  for (const name of ['1001', '1001-mobile']) {
+    if (!girlFiles.includes(`${name}.jpg`)) continue;
+    const input = await readFile(join(publicDirectory, 'girls', `${name}.jpg`));
+    const data = await sharp(input).webp({ quality: 85, effort: 6 }).toBuffer();
+    await writeFile(join(publicDirectory, 'girls', `${name}.webp`), data);
+  }
   let sourceBytes = 0;
   let generatedBytes = 0;
   for (const directory of ['girls', 'activity-backgrounds', 'logos']) {

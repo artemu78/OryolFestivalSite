@@ -1,6 +1,6 @@
 # Фестиваль ментального здоровья в Орле — Design System
 
-This document describes the existing site, based on the effective rules in `src/styles.css` and the components rendered by `src/main.jsx`. Later CSS declarations and applicable media queries take precedence over earlier declarations. It is a guide for consistent future changes, not a redesign.
+This document describes the existing site, based on the effective rules in `src/styles.css` and the page structure in `src/App.jsx` and `src/components/`. The shared `src/Root.jsx` wraps the app with its providers; `src/entry-client.jsx` starts it in the browser, and `src/entry-server.jsx` renders it during the build. Later CSS declarations and applicable media queries take precedence over earlier declarations. It is a guide for consistent future changes, not a redesign.
 
 Format reference: [What is DESIGN.md?](https://designmd.ai/what-is-design-md).
 
