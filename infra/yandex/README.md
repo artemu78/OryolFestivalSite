@@ -284,3 +284,13 @@ Sponsors result in one transaction. Existing edits and hidden rows survive repea
 imports. Deploy `festival-admin` after seeding: public `list.sponsors` returns only
 visible rows. Rebuild/publish the frontend once to switch to the dynamic gallery;
 subsequent row edits need only a page refresh. See [editing sponsors](../../docs/editing-sponsors.md).
+
+## Temporary Latin-domain file deployment
+
+Run `npm run deploy:yandex:latin` from the project root to rebuild for `/` and
+upload only to `mentalhealthfestival.ru`, bypassing Terraform certificate refresh.
+It uses the existing IAM/service-account credentials, compares MD5 and cache
+headers, uploads dependencies before index.html, and preserves old files.
+It does not change DNS, HTTPS, APIs or the Cyrillic bucket. Interrupted uploads
+can be retried with the same command. Normal Terraform deployment remains the
+full infrastructure path; its next refresh reconciles uploaded objects.

@@ -10,7 +10,8 @@
     "deploy:yandex": "PAGES_BASE_PATH=/ npm run build && if [ -z \"$YC_TOKEN\" ] && [ -z \"$YC_SERVICE_ACCOUNT_KEY_FILE\" ]; then export YC_SERVICE_ACCOUNT_KEY_FILE=\"$PWD/infra/yandex/authorized_key.json\"; fi && terraform -chdir=infra/yandex apply",
     "images:optimize": "node scripts/optimize-images.mjs",
     "predev": "npm run images:optimize",
-    "prebuild": "npm run images:optimize"
+    "prebuild": "npm run images:optimize",
+    "deploy:yandex:latin": "PAGES_BASE_PATH=/ npm run build && node scripts/deploy-latin.mjs"
   },
   "dependencies": {
     "react": "^19.2.0",

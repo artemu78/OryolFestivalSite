@@ -2,6 +2,7 @@ node_modules/
 dist/
 public/optimized-images/
 .DS_Store
+.prerender
 
 # Local cloud credentials, Terraform state, plans, and function packages.
 infra/yandex/.terraform/
@@ -15,3 +16,6 @@ infra/yandex/crash.*.log
 **/__pycache__/
 infra/yandex/authorized_key.json
 explanation/
+
+# Original festival photos, retained locally outside the public build.
+/.local/festival-photo-originals/

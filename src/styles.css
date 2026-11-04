@@ -1750,3 +1750,18 @@ h2 em {
     transform: none;
   }
 }
+
+.festival-photos-grid { display: flex; gap: 20px; overflow-x: auto; scroll-snap-type: x mandatory; position: relative; scrollbar-width: thin; padding-bottom: 12px; }
+.festival-photos-grid > .festival-photo { flex: 0 0 calc((100% - 40px) / 3); scroll-snap-align: start; }
+.festival-photo { display: block; padding: 0; border: 0; border-radius: 16px; overflow: hidden; background: var(--line); cursor: zoom-in; }
+.festival-photo img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.festival-photos-controls { display: flex; justify-content: center; align-items: center; gap: 24px; margin-top: 24px; font-size: .85rem; }
+.festival-photos-controls button { width: 48px; height: 48px; border: 1px solid var(--green); border-radius: 50%; color: var(--green); background: transparent; }
+.festival-photos-controls button:disabled { opacity: .3; cursor: default; }
+.festival-photo-dialog { border: 0; padding: 52px 12px 12px; background: var(--cream); border-radius: 16px; max-width: 95vw; max-height: 95dvh; }
+.festival-photo-dialog::backdrop { background: rgb(10 25 19 / 85%); }
+.festival-photo-dialog img { display: block; max-width: 88vw; max-height: calc(90dvh - 64px); object-fit: contain; }
+.festival-photo-close { position: absolute; right: 10px; top: 5px; width: 44px; height: 44px; border: 0; background: transparent; color: var(--green); font-size: 32px; }
+@media (max-width: 700px) {
+  .festival-photos-grid > .festival-photo { flex-basis: 100%; }
+}
